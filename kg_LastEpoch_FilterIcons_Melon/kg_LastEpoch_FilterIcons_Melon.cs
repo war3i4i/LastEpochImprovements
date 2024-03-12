@@ -7,20 +7,21 @@ using Il2CppItemFiltering;
 using Il2CppTMPro;
 using MelonLoader;
 using UnityEngine;
-using UnityEngine.Events; 
-using UnityEngine.UI; 
+using UnityEngine.Events;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.1", "KG")]
-namespace kg_LastEpoch_FilterIcons_Melon; 
+[assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.2", "KG")]
+
+namespace kg_LastEpoch_FilterIcons_Melon;
 
 public class kg_LastEpoch_FilterIcons_Melon : MelonMod
 {
-    private static kg_LastEpoch_FilterIcons_Melon _thistype;  
-    private static MelonPreferences_Category FilterIconsMod; 
-    private static MelonPreferences_Entry<bool> ShowAll; 
+    private static kg_LastEpoch_FilterIcons_Melon _thistype;
+    private static MelonPreferences_Category FilterIconsMod;
+    private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<bool> AffixShowRoll;
-    private static GameObject CustomMapIcon; 
+    private static GameObject CustomMapIcon;
 
     private static void CreateCustomMapIcon()
     {
@@ -57,14 +58,14 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         _thistype = this;
         FilterIconsMod = MelonPreferences.CreateCategory("kg_FilterIcons");
         ShowAll = FilterIconsMod.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
-        AffixShowRoll = FilterIconsMod.CreateEntry("Show Affix Roll", true, "Show Affix Roll", "Show each affix roll on item");
+        AffixShowRoll = FilterIconsMod.CreateEntry("Show Affix Roll", false, "Show Affix Roll", "Show each affix roll on item");
         FilterIconsMod.SetFilePath("UserData/kg_LastEpoch_FilterIcons.cfg", autoload: true);
         CreateCustomMapIcon();
     }
-    
+
     private static Color GetColorForItemRarity(ItemDataUnpacked item)
     {
-        if (item.isUnique()) return new Color(1f, 0.38f, 0f); 
+        if (item.isUnique()) return new Color(1f, 0.38f, 0f);
         if (item.isSet()) return Color.green;
         if (item.isUniqueSetOrLegendary()) return Color.red;
         if (item.isExaltedItem()) return Color.magenta;
@@ -75,31 +76,29 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     }
 
     [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.AffixFormatter))]
-    [HarmonyWrapSafe]
     private static class TooltipItemManager_AffixFormatter_Patch
     {
         private static void Postfix(ItemDataUnpacked item, ItemAffix affix, ref string __result)
         {
             if (affix == null || !AffixShowRoll.Value) return;
             float roll = affix.getRollFloat();
-            string toInsert =  $" (<color=yellow>{Math.Round(roll, 3)}</color>)";
+            string toInsert = $" (<color=yellow>{Math.Round(roll, 3)}</color>)";
             int lastNewLine = __result.LastIndexOf("\n", StringComparison.Ordinal);
             if (lastNewLine == -1)
-                __result += toInsert;  
+                __result += toInsert;
             else
                 __result = __result.Insert(lastNewLine, toInsert);
         }
-    } 
-    
-    [HarmonyPatch(typeof(TooltipItemManager),nameof(TooltipItemManager.UniqueBasicModFormatter))]
-    [HarmonyWrapSafe]
+    }
+
+    [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.UniqueBasicModFormatter))]
     private static class TooltipItemManager_FormatUniqueModAffixString_Patch
     {
         private static void Postfix(ItemDataUnpacked item, ref string __result, float modifierValue, int uniqueModIndex)
         {
             if (item == null || !AffixShowRoll.Value) return;
             if (item.uniqueID > UniqueList.instance.uniques.Count) return;
-            if (UniqueList.instance.uniques.get(item.uniqueID) is not {} uniqueEntry) return;
+            if (UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return;
             UniqueItemMod uniqueMod = uniqueEntry.mods.get(uniqueModIndex);
             float min = uniqueMod.value; float max = uniqueMod.maxValue;
             float roll = min == max || modifierValue > max ? 1 : (modifierValue - min) / (max - min);
@@ -113,7 +112,6 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     }
 
     [HarmonyPatch(typeof(Rule), nameof(Rule.Match))]
-    [HarmonyWrapSafe]
     private static class Rule_Match_Patch
     {
         private static void Postfix(Rule __instance, ItemDataUnpacked data, ref bool __result)
@@ -130,7 +128,6 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     }
 
     [HarmonyPatch(typeof(GroundItemVisuals), nameof(GroundItemVisuals.initialise), typeof(ItemDataUnpacked), typeof(uint), typeof(GroundItemLabel), typeof(GroundItemRarityVisuals), typeof(bool))]
-    [HarmonyWrapSafe]
     private static class GroundItemVisuals_initialise_Patch2
     {
         private static bool ShouldShow(Rule rule)
@@ -139,7 +136,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
             if (ShowAll.Value) return true;
             return rule.emphasized;
         }
-        
+
         private static void Postfix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label)
         {
             ItemFilter filter = ItemFilterManager.Instance.Filter;
@@ -243,7 +240,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
             if ((!showingAffix || showingAffix == this) && Input.GetKey(KeyCode.LeftShift))
             {
                 bool isMouseInside = RectTransformUtility.RectangleContainsScreenPoint(thisTransform, Input.mousePosition);
-                if (isMouseInside) 
+                if (isMouseInside)
                 {
                     showingAffix = this;
                     PointerEnter();
@@ -255,10 +252,9 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     }
 
     [HarmonyPatch(typeof(SettingsPanelTabNavigable), nameof(SettingsPanelTabNavigable.Awake))]
-    [HarmonyWrapSafe]
     private static class SettingsPanelTabNavigable_Awake_Patch
     {
-        private static void Postfix(SettingsPanelTabNavigable __instance) 
+        private static void Postfix(SettingsPanelTabNavigable __instance)
         {
             __instance.CreateNewOption("<color=green>Map Filter Show All</color>", ShowAll, (tf) =>
             {
@@ -271,7 +267,5 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
                 FilterIconsMod.SaveToFile();
             });
         }
-        
     }
 }
-
