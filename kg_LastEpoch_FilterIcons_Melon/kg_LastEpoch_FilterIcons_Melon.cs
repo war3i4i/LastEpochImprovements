@@ -8,10 +8,10 @@ using Il2CppTMPro;
 using MelonLoader;
 using UnityEngine;
 using UnityEngine.Events; 
-using UnityEngine.UI;
+using UnityEngine.UI; 
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.0", "KG")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.1", "KG")]
 namespace kg_LastEpoch_FilterIcons_Melon; 
 
 public class kg_LastEpoch_FilterIcons_Melon : MelonMod
@@ -19,7 +19,6 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     private static kg_LastEpoch_FilterIcons_Melon _thistype;  
     private static MelonPreferences_Category FilterIconsMod; 
     private static MelonPreferences_Entry<bool> ShowAll; 
-    private static MelonPreferences_Entry<bool> ShowIfEmphasized; 
     private static MelonPreferences_Entry<bool> AffixShowRoll;
     private static GameObject CustomMapIcon; 
 
@@ -55,11 +54,10 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
 
     public override void OnInitializeMelon()
     {
-        _thistype = this;   
+        _thistype = this;
         FilterIconsMod = MelonPreferences.CreateCategory("kg_FilterIcons");
         ShowAll = FilterIconsMod.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
         AffixShowRoll = FilterIconsMod.CreateEntry("Show Affix Roll", true, "Show Affix Roll", "Show each affix roll on item");
-        ShowIfEmphasized = FilterIconsMod.CreateEntry("Show If Emphasized", false, "Show If Emphasized", "Show each filter rule on map if it's emphasized");
         FilterIconsMod.SetFilePath("UserData/kg_LastEpoch_FilterIcons.cfg", autoload: true);
         CreateCustomMapIcon();
     }
@@ -139,9 +137,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         {
             if (!rule.isEnabled || rule.type == Rule.RuleOutcome.HIDE) return false;
             if (ShowAll.Value) return true;
-            if (rule.nameOverride.Contains("@show")) return true;
-            if (ShowIfEmphasized.Value && rule.emphasized) return true;
-            return false;
+            return rule.emphasized;
         }
         
         private static void Postfix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label)
@@ -267,11 +263,6 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
             __instance.CreateNewOption("<color=green>Map Filter Show All</color>", ShowAll, (tf) =>
             {
                 ShowAll.Value = tf;
-                FilterIconsMod.SaveToFile();
-            });
-            __instance.CreateNewOption("<color=green>Map Filter Show If Emphasized</color>", ShowIfEmphasized, (tf) =>
-            {
-                ShowIfEmphasized.Value = tf;
                 FilterIconsMod.SaveToFile();
             });
             __instance.CreateNewOption("<color=green>Affix Show Roll</color>", AffixShowRoll, (tf) =>
