@@ -5,6 +5,7 @@ using HarmonyLib;
 using Il2Cpp;
 using Il2CppTMPro;
 using MelonLoader;
+using UnityEngine;
 using UnityEngine.Localization.Components;
 using UnityEngine.UI;
 
@@ -35,9 +36,9 @@ public static class Utils
     //adds an option to vanilla last epoch UI settings
     public static void CreateNewOption(this SettingsPanelTabNavigable settings, string Name, MelonPreferences_Entry<bool> option, Action<bool> a)
     {
-        var optionsTransform = settings.transform.GetChild(0).GetChild(0).Find("Option - Minion Health Bars");
+        Transform optionsTransform = settings.transform.GetChild(0).GetChild(0).Find("Option - Minion Health Bars");
         if (!optionsTransform) return;
-        var newButton = UnityEngine.Object.Instantiate(optionsTransform, optionsTransform.parent);
+        Transform newButton = UnityEngine.Object.Instantiate(optionsTransform, optionsTransform.parent);
         newButton.name = Name;
         newButton.SetSiblingIndex(optionsTransform.GetSiblingIndex() + 1);
         newButton.GetChild(0).GetComponent<Toggle>().isOn = option.Value;

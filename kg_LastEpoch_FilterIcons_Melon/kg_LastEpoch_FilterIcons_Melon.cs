@@ -1,5 +1,5 @@
 ﻿using System;
-using Harmony;
+using HarmonyLib;
 using Il2Cpp;
 using Il2CppDMM;
 using Il2CppInterop.Runtime.Injection;
@@ -7,18 +7,18 @@ using Il2CppItemFiltering;
 using Il2CppTMPro;
 using MelonLoader;
 using UnityEngine;
-using UnityEngine.Events;
+using UnityEngine.Events; 
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 [assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.0", "KG")]
-namespace kg_LastEpoch_FilterIcons_Melon;
+namespace kg_LastEpoch_FilterIcons_Melon; 
 
 public class kg_LastEpoch_FilterIcons_Melon : MelonMod
 {
-    private static kg_LastEpoch_FilterIcons_Melon _thistype; 
+    private static kg_LastEpoch_FilterIcons_Melon _thistype;  
     private static MelonPreferences_Category FilterIconsMod; 
-    private static MelonPreferences_Entry<bool> OverrideShow;
+    private static MelonPreferences_Entry<bool> OverrideShow; 
     private static MelonPreferences_Entry<bool> AffixShowRoll;
     private static GameObject CustomMapIcon; 
 
@@ -27,27 +27,27 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         ClassInjector.RegisterTypeInIl2Cpp<CustomIconProcessor>();
         CustomMapIcon = new GameObject("kg_CustomMapIcon") { hideFlags = HideFlags.HideAndDontSave };
         CustomMapIcon.SetActive(false);
-        var iconChild = new GameObject("Icon");
+        GameObject iconChild = new GameObject("Icon");
         iconChild.transform.SetParent(CustomMapIcon.transform);
         iconChild.transform.localPosition = Vector3.zero;
         iconChild.transform.localScale = Vector3.one;
-        var itemIcon = iconChild.AddComponent<Image>();
+        Image itemIcon = iconChild.AddComponent<Image>();
         itemIcon.rectTransform.sizeDelta = new Vector2(24, 24);
-        var backgroundIcon = CustomMapIcon.AddComponent<Image>();
+        Image backgroundIcon = CustomMapIcon.AddComponent<Image>();
         backgroundIcon.rectTransform.sizeDelta = new Vector2(24, 24);
-        var canvasGroup = CustomMapIcon.AddComponent<CanvasGroup>();
+        CanvasGroup canvasGroup = CustomMapIcon.AddComponent<CanvasGroup>();
         canvasGroup.ignoreParentGroups = true;
         GameObject textChild = new("Text");
         textChild.transform.SetParent(CustomMapIcon.transform);
         textChild.transform.localPosition = Vector3.zero;
-        var textComponent = textChild.AddComponent<Text>();
+        Text textComponent = textChild.AddComponent<Text>();
         textComponent.fontSize = 15;
         textComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
         textComponent.alignment = TextAnchor.MiddleLeft;
         textComponent.rectTransform.anchoredPosition = new Vector2(64, 0);
         textComponent.horizontalOverflow = HorizontalWrapMode.Overflow;
         textComponent.verticalOverflow = VerticalWrapMode.Overflow;
-        var outline = textComponent.AddComponent<Outline>();
+        Outline outline = textComponent.AddComponent<Outline>();
         outline.effectColor = Color.black;
         CustomMapIcon.AddComponent<CustomIconProcessor>();
     }
@@ -75,14 +75,34 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     }
 
     [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.AffixFormatter))]
+    [HarmonyWrapSafe]
     private static class TooltipItemManager_AffixFormatter_Patch
     {
-        private static void Postfix(
-            ItemAffix affix,
-            ref string __result)
+        private static void Postfix(ItemDataUnpacked item, ItemAffix affix, ref string __result)
         {
             if (affix == null || !AffixShowRoll.Value) return;
-            string toInsert =  $" (<color=yellow>{Math.Round(affix.getRollFloat(), 3)}</color>)";
+            float roll = affix.getRollFloat();
+            string toInsert =  $" (<color=yellow>{Math.Round(roll, 3)}</color>)";
+            int lastNewLine = __result.LastIndexOf("\n", StringComparison.Ordinal);
+            if (lastNewLine == -1)
+                __result += toInsert;  
+            else
+                __result = __result.Insert(lastNewLine, toInsert);
+        }
+    } 
+    
+    [HarmonyPatch(typeof(TooltipItemManager),nameof(TooltipItemManager.UniqueBasicModFormatter))]
+    [HarmonyWrapSafe]
+    private static class TooltipItemManager_FormatUniqueModAffixString_Patch
+    {
+        private static void Postfix(ItemDataUnpacked item, ref string __result, float modifierValue, int uniqueModIndex)
+        {
+            if (item.uniqueID > UniqueList.instance.uniques.Count) return;
+            if (UniqueList.instance.uniques.get(item.uniqueID) is not {} uniqueEntry) return;
+            UniqueItemMod uniqueMod = uniqueEntry.mods.get(uniqueModIndex);
+            float min = uniqueMod.value; float max = uniqueMod.maxValue;
+            float roll = min == max || modifierValue > max ? 1 : (modifierValue - min) / (max - min);
+            string toInsert = $" (<color=yellow>{Math.Round(roll, 3)}</color>)";
             int lastNewLine = __result.LastIndexOf("\n", StringComparison.Ordinal);
             if (lastNewLine == -1)
                 __result += toInsert;
@@ -92,6 +112,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     }
 
     [HarmonyPatch(typeof(Rule), nameof(Rule.Match))]
+    [HarmonyWrapSafe]
     private static class Rule_Match_Patch
     {
         private static void Postfix(Rule __instance, ItemDataUnpacked data, ref bool __result)
@@ -108,11 +129,12 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     }
 
     [HarmonyPatch(typeof(GroundItemVisuals), nameof(GroundItemVisuals.initialise), typeof(ItemDataUnpacked), typeof(uint), typeof(GroundItemLabel), typeof(GroundItemRarityVisuals), typeof(bool))]
+    [HarmonyWrapSafe]
     private static class GroundItemVisuals_initialise_Patch2
     {
         private static void Postfix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label)
         {
-            var filter = ItemFilterManager.Instance.Filter;
+            ItemFilter filter = ItemFilterManager.Instance.Filter;
             if (filter != null)
             {
                 foreach (Rule rule in filter.rules)
@@ -121,7 +143,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
                     if (!rule.nameOverride.Contains("@show") && !OverrideShow.Value) continue;
                     if (rule.Match(itemData))
                     {
-                        var customMapIcon = Object.Instantiate(CustomMapIcon, DMMap.Instance.iconContainer.transform);
+                        GameObject customMapIcon = Object.Instantiate(CustomMapIcon, DMMap.Instance.iconContainer.transform);
                         customMapIcon.SetActive(true);
                         customMapIcon.GetComponent<CustomIconProcessor>().Init(__instance.gameObject, label);
                         string path = ItemList.instance.GetBaseTypeName(itemData.itemType).Replace(" ", "_").ToLower();
@@ -136,7 +158,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
                             }
                         }
 
-                        var icon = Resources.Load<Sprite>($"gear/{path}/{itemName}");
+                        Sprite icon = Resources.Load<Sprite>($"gear/{path}/{itemName}");
                         customMapIcon.GetComponent<Image>().sprite = ItemList.instance.defaultItemBackgroundSprite;
                         customMapIcon.GetComponent<Image>().color = GetColorForItemRarity(itemData);
                         customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = icon;
@@ -226,6 +248,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     }
 
     [HarmonyPatch(typeof(SettingsPanelTabNavigable), nameof(SettingsPanelTabNavigable.Awake))]
+    [HarmonyWrapSafe]
     private static class SettingsPanelTabNavigable_Awake_Patch
     {
         private static void Postfix(SettingsPanelTabNavigable __instance) 
