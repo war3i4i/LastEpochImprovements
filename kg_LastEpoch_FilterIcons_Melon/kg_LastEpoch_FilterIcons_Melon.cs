@@ -12,7 +12,7 @@ using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using System.Collections.Generic;
 
-[assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.3", "KG")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.3a", "KG")]
 
 namespace kg_LastEpoch_FilterIcons_Melon;
 
@@ -102,6 +102,19 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         return "\"S\"";
     }
 
+    private static string GetItemTierColor(double tier)
+    {
+        // World of Warcraft Color Coded Loot table
+        if (tier == 1) return "#D2D2D2"; //poor
+        if (tier == 2) return "#E1E1E1"; //common
+        if (tier == 3) return "#16FF0E"; //uncommon
+        if (tier == 4) return "#77ACFF"; //rare
+        if (tier == 5) return "#A807FF"; //epic
+        if (tier == 6) return "#FA9E3D"; //legendary 
+        return "#FFD1A2"; //artifact
+        // #A6CDF2; //heirloom
+    }
+
     private static string GetItemRollRarityResult(float roll, bool fullResult, string finishedString, bool isMultiMod)
     {
         double value = Math.Round(roll * 100.0, 1);
@@ -123,16 +136,30 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         foreach (string word in searchWords)
         {
             int ix = finishedString.IndexOf(word);
-            if (ix != -1)
-            {
-                finishedString = finishedString.Insert(ix + word.Length, rollText);
-            }
+            if (ix != -1) finishedString = finishedString.Insert(ix + word.Length, rollText);
         }
 
         return starText + finishedString;
-        
+    }
 
-
+    private static string GetItemTierRarityResult(int tier, string finishedString)
+    {
+        string[] searchWords = { "Range:", "Диапазон:", "Variar:", "Bereich:", "Zakres:", "Intervalle:", "Rango:" };
+        bool cleared = true;
+        foreach (string word in searchWords)
+        {
+            if (finishedString.IndexOf(word) != -1) cleared = false;
+        }
+        if (cleared)
+        {
+            int lastNewLine = finishedString.LastIndexOf("\n", StringComparison.Ordinal);
+            string toInsert = $" <color={GetItemTierColor(tier)}>[T{tier}]</color>";
+            if (lastNewLine == -1)
+                finishedString += toInsert;
+            else
+                finishedString = finishedString.Insert(lastNewLine, toInsert);
+        }
+        return finishedString;
     }
 
 
@@ -141,7 +168,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     {
         private static void Postfix(ItemDataUnpacked item, ItemAffix affix, ref string __result, float modifierValue, bool isMultiMod, int implicitIndex, int uniqueModIndex, bool isRange)
         {
-            //if (affix == null || !AffixShowRoll.Value) return;
+            if (!AffixShowRoll.Value) return;
             float roll;
             string toInsert = "";
             if (implicitIndex > -1)
@@ -160,11 +187,11 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
                 UniqueItemMod uniqueMod = uniqueEntry.mods.get(uniqueModIndex);
                 float min = uniqueMod.value; float max = uniqueMod.maxValue;
                 roll = min == max || modifierValue > max ? 1 : (modifierValue - min) / (max - min);
-
             }
             else
             {
                 roll = item.GetAffixRollFloat(affix.affixId);
+                __result = GetItemTierRarityResult(item.GetAffixTier(affix.affixId) + 1, __result);
             }
             toInsert = GetItemRollRarityResult(roll, ShowRarityFull.Value, __result, isMultiMod);
             // fix to hide 2field affix on item
@@ -184,14 +211,6 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
             if (item.uniqueID > UniqueList.instance.uniques.Count) return;
             if (UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return;
             UniqueItemMod uniqueMod = uniqueEntry.mods.get(uniqueModIndex);
-            float min = uniqueMod.value; float max = uniqueMod.maxValue;
-            float roll = min == max || modifierValue > max ? 1 : (modifierValue - min) / (max - min);
-            string toInsert = $" (<color=yellow>{Math.Round(roll, 3)}</color>)";
-            int lastNewLine = __result.LastIndexOf("\n", StringComparison.Ordinal);
-            if (lastNewLine == -1)
-                __result += toInsert;
-            else
-                __result = __result.Insert(lastNewLine, toInsert);
         }
     }
 
