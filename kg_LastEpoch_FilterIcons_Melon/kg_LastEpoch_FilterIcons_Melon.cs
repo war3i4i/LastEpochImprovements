@@ -23,7 +23,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll; 
     private static GameObject CustomMapIcon;
 
-    private enum DisplayAffixType { None, Style_1, Style_2 };
+    private enum DisplayAffixType { None, Old_Style, New_Style };
 
     private static void CreateCustomMapIcon() 
     {
@@ -60,7 +60,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         _thistype = this;
         FilterIconsMod = MelonPreferences.CreateCategory("kg_FilterIcons");
         ShowAll = FilterIconsMod.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
-        AffixShowRoll = FilterIconsMod.CreateEntry("Show Affix Roll", DisplayAffixType.None, "Show Affix Roll", "Show each affix roll on item");
+        AffixShowRoll = FilterIconsMod.CreateEntry("Show Affix Roll New", DisplayAffixType.None, "Show Affix Roll New", "Show each affix roll on item");
         FilterIconsMod.SetFilePath("UserData/kg_LastEpoch_FilterIcons.cfg", autoload: true);
         CreateCustomMapIcon();
     }
@@ -85,8 +85,8 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
             if (item == null || affix == null || AffixShowRoll.Value is DisplayAffixType.None) return;
             __result = AffixShowRoll.Value switch
             {
-                DisplayAffixType.Style_1 => __result.Style1_AffixRoll(affix),
-                DisplayAffixType.Style_2 => __result.Style2_AffixRoll(affix),
+                DisplayAffixType.Old_Style => __result.Style1_AffixRoll(affix),
+                DisplayAffixType.New_Style => __result.Style2_AffixRoll(affix),
                 _ => __result 
             };
         }
@@ -100,8 +100,8 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
             if (item == null || AffixShowRoll.Value is DisplayAffixType.None || item.isSet()) return;
             __result = AffixShowRoll.Value switch
             {
-                DisplayAffixType.Style_1 => __result.Style1_AffixRoll_Unique(item, uniqueModIndex, modifierValue),
-                DisplayAffixType.Style_2 => __result.Style2_AffixRoll_Unique(item, uniqueModIndex, modifierValue),
+                DisplayAffixType.Old_Style => __result.Style1_AffixRoll_Unique(item, uniqueModIndex, modifierValue),
+                DisplayAffixType.New_Style => __result.Style2_AffixRoll_Unique(item, uniqueModIndex, modifierValue),
                 _ => __result
             };
         }
@@ -115,8 +115,8 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
             if (item == null || AffixShowRoll.Value is DisplayAffixType.None || item.isSet()) return;
             __result = AffixShowRoll.Value switch
             {
-                DisplayAffixType.Style_1 => __result.Style1_Implicit(item, implicitNumber),
-                DisplayAffixType.Style_2 => __result.Style2_Implicit(item, implicitNumber),
+                DisplayAffixType.Old_Style => __result.Style1_Implicit(item, implicitNumber),
+                DisplayAffixType.New_Style => __result.Style2_Implicit(item, implicitNumber),
                 _ => __result
             }; 
         }
