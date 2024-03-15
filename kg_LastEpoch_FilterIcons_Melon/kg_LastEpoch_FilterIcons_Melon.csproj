@@ -28,6 +28,9 @@
       <Reference Include="Il2CppLE">
         <HintPath>Libs\Il2CppLE.dll</HintPath>
       </Reference>
+      <Reference Include="Il2CppLE.UI.Controls">
+        <HintPath>Libs\Il2CppLE.UI.Controls.dll</HintPath>
+      </Reference>
       <Reference Include="Il2Cppmscorlib">
         <HintPath>Libs\Il2Cppmscorlib.dll</HintPath>
       </Reference>

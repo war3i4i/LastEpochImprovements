@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using Il2Cpp;
+using Il2CppLE.UI.Controls;
 using Il2CppTMPro;
 using MelonLoader;
 using UnityEngine;
@@ -45,5 +46,30 @@ public static class Utils
         newButton.GetChild(0).GetComponent<Toggle>().onValueChanged.AddListener(a);
         UnityEngine.Object.DestroyImmediate(newButton.GetChild(1).GetChild(0).GetComponent<LocalizeStringEvent>());
         newButton.GetChild(1).GetChild(0).GetComponent<TMP_Text>().text = Name;
-    } 
+    }
+    public static void CreateNewOption_EnumDropdown<T>(this SettingsPanelTabNavigable settings, string Name, string Description, MelonPreferences_Entry<T> option, Action<int> a) where T : Enum
+    {
+        Transform optionsTransform = settings.transform.GetChild(0).GetChild(0).Find("Dropdown - Language Selection");
+        Transform orderTransform = settings.transform.GetChild(0).GetChild(0).Find("Option - Minion Health Bars");
+        if (!optionsTransform || !orderTransform) return;
+        Transform newDropdown = UnityEngine.Object.Instantiate(optionsTransform, optionsTransform.parent);
+        UnityEngine.Object.DestroyImmediate(newDropdown.GetComponent<LocalizationSettingsPanelUI>());
+        UnityEngine.Object.DestroyImmediate(newDropdown.GetComponent<LootFilterSettingsPanelUI>());
+        newDropdown.name = Name;
+        newDropdown.SetSiblingIndex(orderTransform.GetSiblingIndex() + 1);
+        
+        newDropdown.GetChild(0).GetComponent<TMP_Text>().text = Name;
+        UnityEngine.Object.DestroyImmediate(newDropdown.GetChild(0).GetComponent<LocalizeStringEvent>());
+        newDropdown.GetChild(1).GetComponent<TMP_Text>().text = Description;
+        UnityEngine.Object.DestroyImmediate(newDropdown.GetChild(1).GetComponent<LocalizeStringEvent>());
+        
+        ColoredIconDropdown dropdown = newDropdown.GetChild(3).GetComponent<ColoredIconDropdown>();
+        dropdown.onValueChanged.RemoveAllListeners();
+        dropdown.ClearOptions(); 
+        Il2CppSystem.Collections.Generic.List<string> options = new();
+        foreach (string enumName in Enum.GetNames(typeof(T))) options.Add(enumName.Replace("_"," "));
+        dropdown.AddOptions(options);
+        dropdown.value = (int)(object)option.Value;
+        dropdown.onValueChanged.AddListener(a);
+    }
 }

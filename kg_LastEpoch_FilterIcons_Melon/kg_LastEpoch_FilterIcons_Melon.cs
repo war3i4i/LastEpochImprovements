@@ -11,7 +11,7 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.2", "KG")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.3", "KG")]
 
 namespace kg_LastEpoch_FilterIcons_Melon;
 
@@ -20,10 +20,12 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     private static kg_LastEpoch_FilterIcons_Melon _thistype;
     private static MelonPreferences_Category FilterIconsMod;
     private static MelonPreferences_Entry<bool> ShowAll;
-    private static MelonPreferences_Entry<bool> AffixShowRoll;
+    private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll; 
     private static GameObject CustomMapIcon;
 
-    private static void CreateCustomMapIcon()
+    private enum DisplayAffixType { None, Style_1, Style_2 };
+
+    private static void CreateCustomMapIcon() 
     {
         ClassInjector.RegisterTypeInIl2Cpp<CustomIconProcessor>();
         CustomMapIcon = new GameObject("kg_CustomMapIcon") { hideFlags = HideFlags.HideAndDontSave };
@@ -58,7 +60,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         _thistype = this;
         FilterIconsMod = MelonPreferences.CreateCategory("kg_FilterIcons");
         ShowAll = FilterIconsMod.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
-        AffixShowRoll = FilterIconsMod.CreateEntry("Show Affix Roll", false, "Show Affix Roll", "Show each affix roll on item");
+        AffixShowRoll = FilterIconsMod.CreateEntry("Show Affix Roll", DisplayAffixType.None, "Show Affix Roll", "Show each affix roll on item");
         FilterIconsMod.SetFilePath("UserData/kg_LastEpoch_FilterIcons.cfg", autoload: true);
         CreateCustomMapIcon();
     }
@@ -80,34 +82,43 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     {
         private static void Postfix(ItemDataUnpacked item, ItemAffix affix, ref string __result)
         {
-            if (affix == null || !AffixShowRoll.Value) return;
-            float roll = affix.getRollFloat();
-            string toInsert = $" (<color=yellow>{Math.Round(roll, 3)}</color>)";
-            int lastNewLine = __result.LastIndexOf("\n", StringComparison.Ordinal);
-            if (lastNewLine == -1)
-                __result += toInsert;
-            else
-                __result = __result.Insert(lastNewLine, toInsert);
+            if (item == null || affix == null || AffixShowRoll.Value is DisplayAffixType.None) return;
+            __result = AffixShowRoll.Value switch
+            {
+                DisplayAffixType.Style_1 => __result.Style1_AffixRoll(affix),
+                DisplayAffixType.Style_2 => __result.Style2_AffixRoll(affix),
+                _ => __result 
+            };
         }
     }
 
     [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.UniqueBasicModFormatter))]
-    private static class TooltipItemManager_FormatUniqueModAffixString_Patch
+    private static class TooltipItemManager_FormatUniqueModAffixString_Patch 
     {
-        private static void Postfix(ItemDataUnpacked item, ref string __result, float modifierValue, int uniqueModIndex)
+        private static void Postfix(ItemDataUnpacked item, ref string __result, int uniqueModIndex, float modifierValue)
         {
-            if (item == null || !AffixShowRoll.Value) return;
-            if (item.uniqueID > UniqueList.instance.uniques.Count) return;
-            if (UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return;
-            UniqueItemMod uniqueMod = uniqueEntry.mods.get(uniqueModIndex);
-            float min = uniqueMod.value; float max = uniqueMod.maxValue;
-            float roll = min == max || modifierValue > max ? 1 : (modifierValue - min) / (max - min);
-            string toInsert = $" (<color=yellow>{Math.Round(roll, 3)}</color>)";
-            int lastNewLine = __result.LastIndexOf("\n", StringComparison.Ordinal);
-            if (lastNewLine == -1)
-                __result += toInsert;
-            else
-                __result = __result.Insert(lastNewLine, toInsert);
+            if (item == null || AffixShowRoll.Value is DisplayAffixType.None || item.isSet()) return;
+            __result = AffixShowRoll.Value switch
+            {
+                DisplayAffixType.Style_1 => __result.Style1_AffixRoll_Unique(item, uniqueModIndex, modifierValue),
+                DisplayAffixType.Style_2 => __result.Style2_AffixRoll_Unique(item, uniqueModIndex, modifierValue),
+                _ => __result
+            };
+        }
+    }
+     
+    [HarmonyPatch(typeof(TooltipItemManager),nameof(TooltipItemManager.ImplicitFormatter))]
+    private static class TooltipItemManager_FormatMod_Patch
+    {
+        private static void Postfix(ItemDataUnpacked item, int implicitNumber , ref string __result)
+        {
+            if (item == null || AffixShowRoll.Value is DisplayAffixType.None || item.isSet()) return;
+            __result = AffixShowRoll.Value switch
+            {
+                DisplayAffixType.Style_1 => __result.Style1_Implicit(item, implicitNumber),
+                DisplayAffixType.Style_2 => __result.Style2_Implicit(item, implicitNumber),
+                _ => __result
+            }; 
         }
     }
 
@@ -235,7 +246,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
                     showingAffix = null;
                     PointerExit();
                 }
-            }
+            } 
 
             if ((!showingAffix || showingAffix == this) && Input.GetKey(KeyCode.LeftShift))
             {
@@ -261,11 +272,12 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
                 ShowAll.Value = tf;
                 FilterIconsMod.SaveToFile();
             });
-            __instance.CreateNewOption("<color=green>Affix Show Roll</color>", AffixShowRoll, (tf) =>
+            __instance.CreateNewOption_EnumDropdown("<color=green>Affix Show Roll</color>", "Show affix roll on item type", AffixShowRoll, (i) =>
             {
-                AffixShowRoll.Value = tf;
+                AffixShowRoll.Value = (DisplayAffixType)i;
                 FilterIconsMod.SaveToFile();
             });
+            
         }
     }
 }
