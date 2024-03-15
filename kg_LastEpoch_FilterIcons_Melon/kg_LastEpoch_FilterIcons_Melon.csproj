@@ -57,4 +57,8 @@
       </Reference>
     </ItemGroup>
 
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="XCOPY /E /Y /R &quot;$(ProjectDir)bin\Debug\net6.0\kg_LastEpoch_FilterIcons_Melon.dll&quot; &quot;d:\SteamLibrary\steamapps\common\Last Epoch\Mods&quot;" />
+    </Target>
+
 </Project>

@@ -10,8 +10,9 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
+using System.Collections.Generic;
 
-[assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.2", "KG")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.3", "KG")]
 
 namespace kg_LastEpoch_FilterIcons_Melon;
 
@@ -21,6 +22,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     private static MelonPreferences_Category FilterIconsMod;
     private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<bool> AffixShowRoll;
+    private static MelonPreferences_Entry<bool> ShowRarityFull;
     private static GameObject CustomMapIcon;
 
     private static void CreateCustomMapIcon()
@@ -59,6 +61,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         FilterIconsMod = MelonPreferences.CreateCategory("kg_FilterIcons");
         ShowAll = FilterIconsMod.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
         AffixShowRoll = FilterIconsMod.CreateEntry("Show Affix Roll", false, "Show Affix Roll", "Show each affix roll on item");
+        ShowRarityFull = FilterIconsMod.CreateEntry("Show Rarity with Stars", true, "Show Rarity with Stars", "Show star system to rolls FF to SSS");
         FilterIconsMod.SetFilePath("UserData/kg_LastEpoch_FilterIcons.cfg", autoload: true);
         CreateCustomMapIcon();
     }
@@ -75,28 +78,109 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         return Color.white;
     }
 
+    private static string GetItemRollRarityColor(double roll)
+    {
+        // World of Warcraft Color Coded Loot table
+        if (roll < 20) return "#D2D2D2"; //poor
+        if (roll < 40) return "#E1E1E1"; //common
+        if (roll < 60) return "#16FF0E"; //uncommon
+        if (roll < 70) return "#77ACFF"; //rare
+        if (roll < 80) return "#A807FF"; //epic
+        if (roll < 95) return "#FA9E3D"; //legendary 
+        return "#FFD1A2"; //artifact
+        // #A6CDF2; //heirloom
+    }
+
+    private static string GetItemRollRarityColorStar(double roll)
+    {
+        if (roll < 20) return "\"F\"";
+        if (roll < 40) return "\"E\"";
+        if (roll < 60) return "\"D\"";
+        if (roll < 70) return "\"C\"";
+        if (roll < 80) return "\"B\"";
+        if (roll < 95) return "\"A\"";
+        return "\"S\"";
+    }
+
+    private static string GetItemRollRarityResult(float roll, bool fullResult, string finishedString, bool isMultiMod)
+    {
+        double value = Math.Round(roll * 100.0, 1);
+        string color = GetItemRollRarityColor(value);
+        string star = GetItemRollRarityColorStar(value);
+
+        string starText = "";
+        if (fullResult)
+            starText = $"<color={color}>{star}</color> ";
+
+        string rollText = $" <color={color}>[{value}%]</color>";
+
+        string[] searchWords = {"Range:", "Диапазон:", "Variar:" , "Bereich:", "Zakres:", "Intervalle:", "Rango:"};
+        if (isMultiMod)
+        {
+            int ix1 = -1;
+            // need search how fix it
+        }
+        foreach (string word in searchWords)
+        {
+            int ix = finishedString.IndexOf(word);
+            if (ix != -1)
+            {
+                finishedString = finishedString.Insert(ix + word.Length, rollText);
+            }
+        }
+
+        return starText + finishedString;
+        
+
+
+    }
+
+
     [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.AffixFormatter))]
     private static class TooltipItemManager_AffixFormatter_Patch
     {
-        private static void Postfix(ItemDataUnpacked item, ItemAffix affix, ref string __result)
+        private static void Postfix(ItemDataUnpacked item, ItemAffix affix, ref string __result, float modifierValue, bool isMultiMod, int implicitIndex, int uniqueModIndex, bool isRange)
         {
-            if (affix == null || !AffixShowRoll.Value) return;
-            float roll = affix.getRollFloat();
-            string toInsert = $" (<color=yellow>{Math.Round(roll, 3)}</color>)";
-            int lastNewLine = __result.LastIndexOf("\n", StringComparison.Ordinal);
-            if (lastNewLine == -1)
-                __result += toInsert;
+            //if (affix == null || !AffixShowRoll.Value) return;
+            float roll;
+            string toInsert = "";
+            if (implicitIndex > -1)
+            {
+                roll = item.getImplictRollFloat(Convert.ToByte(implicitIndex));
+            }
+            else if (uniqueModIndex > -1)
+            {
+                //issues to legendary
+                //roll = (float)(Convert.ToSingle(item.getUniqueRoll(Convert.ToByte(uniqueModIndex))) * 0.001); //* item.BaseUniqueLPRollMultiplier());
+                //float legendaryPotencial = Convert.ToSingle(Convert.ToSingle(item.legendaryPotential));
+                //if (legendaryPotencial > 0) roll *= legendaryPotencial;
+                
+                if (item.uniqueID > UniqueList.instance.uniques.Count) return;
+                if (UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return;
+                UniqueItemMod uniqueMod = uniqueEntry.mods.get(uniqueModIndex);
+                float min = uniqueMod.value; float max = uniqueMod.maxValue;
+                roll = min == max || modifierValue > max ? 1 : (modifierValue - min) / (max - min);
+
+            }
             else
-                __result = __result.Insert(lastNewLine, toInsert);
+            {
+                roll = item.GetAffixRollFloat(affix.affixId);
+            }
+            toInsert = GetItemRollRarityResult(roll, ShowRarityFull.Value, __result, isMultiMod);
+            // fix to hide 2field affix on item
+            //if (isMultiMod == false) {__result = toInsert; }
+            __result = toInsert;
+
         }
     }
 
-    [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.UniqueBasicModFormatter))]
+    //[HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.UniqueBasicModFormatter))]
     private static class TooltipItemManager_FormatUniqueModAffixString_Patch
     {
         private static void Postfix(ItemDataUnpacked item, ref string __result, float modifierValue, int uniqueModIndex)
         {
             if (item == null || !AffixShowRoll.Value) return;
+
             if (item.uniqueID > UniqueList.instance.uniques.Count) return;
             if (UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return;
             UniqueItemMod uniqueMod = uniqueEntry.mods.get(uniqueModIndex);
@@ -266,6 +350,12 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
                 AffixShowRoll.Value = tf;
                 FilterIconsMod.SaveToFile();
             });
+            __instance.CreateNewOption("<color=yellow>Show Rarity with Stars</color>", ShowRarityFull, (tf) =>
+            {
+                ShowRarityFull.Value = tf;
+                FilterIconsMod.SaveToFile();
+            });
+            
         }
     }
 }
