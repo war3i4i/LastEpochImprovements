@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections;
+using System.Reflection.Metadata;
 using HarmonyLib;
 using Il2Cpp;
 using Il2CppDMM;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppItemFiltering;
 using Il2CppTMPro;
+using JetBrains.Annotations;
 using MelonLoader;
 using UnityEngine;
 using UnityEngine.Events;
@@ -288,9 +291,9 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         private static void Postfix(SettingsPanelTabNavigable __instance)
         {
 #if CHEATVERSION
-            __instance.CreateNewOption("<color=green>Clear fog on map on start</color>", FogOfWar, (fow) =>
+            __instance.CreateNewOption("<color=green>Clear fog on map on start</color>", FogOfWar, (tf) =>
             {
-                FogOfWar.Value = fow;
+                FogOfWar.Value = tf;
                 FilterIconsMod.SaveToFile();
             });
 #endif
@@ -321,11 +324,13 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     [HarmonyPatch(typeof(MinimapFogOfWar), nameof(MinimapFogOfWar.Initialize))]
     private static class MinimapFogOfWar_Initialize_Patch
     {
-        private static void Prefix(MinimapFogOfWar __instance)
+        private const float cheatDiscovery = 10000f;
+        private static void Prefix(MinimapFogOfWar __instance, out float __state)
         {
-            if (FogOfWar.Value) { __instance.discoveryDistance = float.MaxValue; }
-            else { __instance.discoveryDistance = 20f; }
+            __state = __instance.discoveryDistance;
+            if (FogOfWar.Value) __instance.discoveryDistance = cheatDiscovery;
         }
+        private static void Postfix(MinimapFogOfWar __instance, float __state) => __instance.discoveryDistance = __state;
     }
 #endif
 
@@ -335,9 +340,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         private static void Postfix(InventoryPanelUI __instance)
         {
             if (AutoStoreCraftMaterials.Value)
-            {
                 __instance.StoreMaterialsButtonPress();
-            }
         }
     }
 
