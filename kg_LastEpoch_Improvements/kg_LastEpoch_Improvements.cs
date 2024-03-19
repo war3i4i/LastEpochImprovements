@@ -15,16 +15,13 @@ using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 [assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.5", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
-[assembly: MelonIncompatibleAssemblies("kg.LastEpoch.Improvements")]
-[assembly: MelonColor(ConsoleColor.DarkCyan)]
-[assembly: MelonAuthorColor(ConsoleColor.DarkCyan)]
 
 namespace kg_LastEpoch_Improvements;
 
 public class kg_LastEpoch_Improvements : MelonMod
 {
     private static kg_LastEpoch_Improvements _thistype;
-    private static MelonPreferences_Category FilterIconsMod;
+    private static MelonPreferences_Category ImprovementsModCategory;
     private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll;
     public static MelonPreferences_Entry<DisplayAffixType_GroundLabel> ShowAffixOnLabel;
@@ -70,15 +67,15 @@ public class kg_LastEpoch_Improvements : MelonMod
     public override void OnInitializeMelon()
     {
         _thistype = this;
-        FilterIconsMod = MelonPreferences.CreateCategory("kg_FilterIcons");
-        ShowAll = FilterIconsMod.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
-        AffixShowRoll = FilterIconsMod.CreateEntry("Show Affix Roll New", DisplayAffixType.None, "Show Affix Roll New", "Show each affix roll on item");
-        ShowAffixOnLabel = FilterIconsMod.CreateEntry("Show Affix On Label", DisplayAffixType_GroundLabel.None, "Show Affix On Label Type", "Show each affix roll on item label (ground)");
-        AutoStoreCraftMaterials = FilterIconsMod.CreateEntry("AutoStoreCraftMaterials", false, "Auto storage craft materials", "Automatic storage of craft materials from the inventory");
+        ImprovementsModCategory = MelonPreferences.CreateCategory("kg_Improvements");
+        ShowAll = ImprovementsModCategory.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
+        AffixShowRoll = ImprovementsModCategory.CreateEntry("Show Affix Roll New", DisplayAffixType.None, "Show Affix Roll New", "Show each affix roll on item");
+        ShowAffixOnLabel = ImprovementsModCategory.CreateEntry("Show Affix On Label", DisplayAffixType_GroundLabel.None, "Show Affix On Label Type", "Show each affix roll on item label (ground)");
+        AutoStoreCraftMaterials = ImprovementsModCategory.CreateEntry("AutoStoreCraftMaterials", false, "Auto storage craft materials", "Automatic storage of craft materials from the inventory");
 #if CHEATVERSION
-        FogOfWar = FilterIconsMod.CreateEntry("Fog fo war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
+        FogOfWar = ImprovementsModCategory.CreateEntry("Fog fo war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
 #endif
-        FilterIconsMod.SetFilePath("UserData/kg_LastEpoch_FilterIcons.cfg", autoload: true);
+        ImprovementsModCategory.SetFilePath("UserData/kg_LastEpoch_Improvements.cfg", autoload: true);
         CreateCustomMapIcon();
     }
 
@@ -297,28 +294,28 @@ public class kg_LastEpoch_Improvements : MelonMod
             __instance.CreateNewOption("<color=green>Clear fog on map on start</color>", FogOfWar, (tf) =>
             {
                 FogOfWar.Value = tf;
-                FilterIconsMod.SaveToFile();
+                ImprovementsModCategory.SaveToFile();
             });
 #endif
             __instance.CreateNewOption_EnumDropdown("<color=green>Affix Show Roll (Tooltip)</color>", "Show affix roll on tooltip text", AffixShowRoll, (i) =>
             {
                 AffixShowRoll.Value = (DisplayAffixType)i;
-                FilterIconsMod.SaveToFile();
+                ImprovementsModCategory.SaveToFile();
             });
             __instance.CreateNewOption_EnumDropdown("<color=green>Affix Show Roll (Ground)", "Show affix roll on ground text", ShowAffixOnLabel, (i) =>
             {
                 ShowAffixOnLabel.Value = (DisplayAffixType_GroundLabel)i;
-                FilterIconsMod.SaveToFile();
+                ImprovementsModCategory.SaveToFile();
             });
             __instance.CreateNewOption("<color=green>Map Filter Show All</color>", ShowAll, (tf) =>
             {
                 ShowAll.Value = tf;
-                FilterIconsMod.SaveToFile();
+                ImprovementsModCategory.SaveToFile();
             });
             __instance.CreateNewOption("<color=green>Auto storage craft materials</color>", AutoStoreCraftMaterials, (ascm) =>
             {
                 AutoStoreCraftMaterials.Value = ascm;
-                FilterIconsMod.SaveToFile();
+                ImprovementsModCategory.SaveToFile();
             });
         }
     }
