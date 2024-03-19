@@ -36,28 +36,43 @@ public static class Utils
         method.Invoke(list, new object[] { index, value });
     }
     //adds an option to vanilla last epoch UI settings
-    public static void CreateNewOption(this SettingsPanelTabNavigable settings, string Name, MelonPreferences_Entry<bool> option, Action<bool> a)
+    private static int CreateCategoryIfNeeded(SettingsPanelTabNavigable settings, string Category)
+    {
+        Transform findExisting = settings.transform.GetChild(0).GetChild(0).Find($"ModsCategory - {Category}");
+        if (findExisting) return findExisting.GetSiblingIndex();
+        Transform headerInterface = settings.transform.GetChild(0).GetChild(0).Find("Header-Interface");
+        if (!headerInterface) return 0;
+        Transform newCategory = UnityEngine.Object.Instantiate(headerInterface, headerInterface.parent);
+        newCategory.name = $"ModsCategory - {Category}";
+        newCategory.GetChild(0).GetChild(0).GetComponent<TMP_Text>().text = Category;
+        newCategory.GetChild(0).GetChild(0).GetComponent<TMP_Text>().color = Color.green;
+        UnityEngine.Object.DestroyImmediate(newCategory.GetChild(0).GetChild(0).GetComponent<LocalizeStringEvent>());
+        newCategory.transform.SetSiblingIndex(headerInterface.GetSiblingIndex());
+        return newCategory.GetSiblingIndex();
+    }
+    public static void CreateNewOption(this SettingsPanelTabNavigable settings, string Category, string Name, MelonPreferences_Entry<bool> option, Action<bool> a)
     {
         Transform optionsTransform = settings.transform.GetChild(0).GetChild(0).Find("Option - Minion Health Bars");
         if (!optionsTransform) return;
+        int orderIndex = CreateCategoryIfNeeded(settings, Category);
         Transform newButton = UnityEngine.Object.Instantiate(optionsTransform, optionsTransform.parent);
         newButton.name = Name;
-        newButton.SetSiblingIndex(optionsTransform.GetSiblingIndex() + 1);
+        newButton.SetSiblingIndex(orderIndex + 1);
         newButton.GetChild(0).GetComponent<Toggle>().isOn = option.Value;
         newButton.GetChild(0).GetComponent<Toggle>().onValueChanged.AddListener(a);
         UnityEngine.Object.DestroyImmediate(newButton.GetChild(1).GetChild(0).GetComponent<LocalizeStringEvent>());
         newButton.GetChild(1).GetChild(0).GetComponent<TMP_Text>().text = Name;
     }
-    public static void CreateNewOption_EnumDropdown<T>(this SettingsPanelTabNavigable settings, string Name, string Description, MelonPreferences_Entry<T> option, Action<int> a) where T : Enum
+    public static void CreateNewOption_EnumDropdown<T>(this SettingsPanelTabNavigable settings, string Category, string Name, string Description, MelonPreferences_Entry<T> option, Action<int> a) where T : Enum
     {
         Transform optionsTransform = settings.transform.GetChild(0).GetChild(0).Find("Dropdown - Language Selection");
-        Transform orderTransform = settings.transform.GetChild(0).GetChild(0).Find("Option - Minion Health Bars");
-        if (!optionsTransform || !orderTransform) return;
+        if (!optionsTransform) return;
+        int orderIndex = CreateCategoryIfNeeded(settings, Category);
         Transform newDropdown = UnityEngine.Object.Instantiate(optionsTransform, optionsTransform.parent);
         UnityEngine.Object.DestroyImmediate(newDropdown.GetComponent<LocalizationSettingsPanelUI>());
         UnityEngine.Object.DestroyImmediate(newDropdown.GetComponent<LootFilterSettingsPanelUI>());
         newDropdown.name = Name;
-        newDropdown.SetSiblingIndex(orderTransform.GetSiblingIndex() + 1);
+        newDropdown.SetSiblingIndex(orderIndex + 1);
         
         newDropdown.GetChild(0).GetComponent<TMP_Text>().text = Name;
         UnityEngine.Object.DestroyImmediate(newDropdown.GetChild(0).GetComponent<LocalizeStringEvent>());

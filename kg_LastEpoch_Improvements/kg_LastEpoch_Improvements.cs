@@ -285,35 +285,36 @@ public class kg_LastEpoch_Improvements : MelonMod
     {
         private static void Postfix(SettingsPanelTabNavigable __instance)
         {
+            const string CategoryName = "KG Improvements";
 #if CHEATVERSION
-            __instance.CreateNewOption("<color=green>[Cheat] Clear fog on map on start</color>", Cheat_FogOfWar, (tf) =>
+            __instance.CreateNewOption(CategoryName, "<color=green>[Cheat] Clear fog on map on start</color>", Cheat_FogOfWar, (tf) =>
             {
                 Cheat_FogOfWar.Value = tf;
                 ImprovementsModCategory.SaveToFile();
             });
-            __instance.CreateNewOption("<color=green>[Cheat] Enhanced camera</color>", Cheat_EnhancedCamera, (tf) =>
+            __instance.CreateNewOption(CategoryName, "<color=green>[Cheat] Enhanced camera</color>", Cheat_EnhancedCamera, (tf) =>
             {
                 Cheat_EnhancedCamera.Value = tf;
                 ImprovementsModCategory.SaveToFile(); 
                 CameraManager_Start_Patch.Switch();
             });
 #endif
-            __instance.CreateNewOption_EnumDropdown("<color=green>Affix Show Roll (Tooltip)</color>", "Show affix roll on tooltip text", AffixShowRoll, (i) =>
+            __instance.CreateNewOption_EnumDropdown(CategoryName, "<color=green>Affix Show Roll (Tooltip)</color>", "Show affix roll on tooltip text", AffixShowRoll, (i) =>
             {
                 AffixShowRoll.Value = (DisplayAffixType)i;
                 ImprovementsModCategory.SaveToFile();
             });
-            __instance.CreateNewOption_EnumDropdown("<color=green>Affix Show Roll (Ground)", "Show affix roll on ground text", ShowAffixOnLabel, (i) =>
+            __instance.CreateNewOption_EnumDropdown(CategoryName, "<color=green>Affix Show Roll (Ground)</color>", "Show affix roll on ground text", ShowAffixOnLabel, (i) =>
             {
                 ShowAffixOnLabel.Value = (DisplayAffixType_GroundLabel)i;
                 ImprovementsModCategory.SaveToFile();
             });
-            __instance.CreateNewOption("<color=green>Map Filter Show All</color>", ShowAll, (tf) =>
+            __instance.CreateNewOption(CategoryName, "<color=green>Map Filter Show All</color>", ShowAll, (tf) =>
             {
                 ShowAll.Value = tf;
                 ImprovementsModCategory.SaveToFile();
             });
-            __instance.CreateNewOption("<color=green>Auto storage craft materials</color>", AutoStoreCraftMaterials, (ascm) =>
+            __instance.CreateNewOption(CategoryName, "<color=green>Auto storage craft materials</color>", AutoStoreCraftMaterials, (ascm) =>
             {
                 AutoStoreCraftMaterials.Value = ascm;
                 ImprovementsModCategory.SaveToFile();
@@ -326,7 +327,7 @@ public class kg_LastEpoch_Improvements : MelonMod
     private static class MinimapFogOfWar_Initialize_Patch
     {
         private const float cheatDiscovery = 10000f;
-        private static void Prefix(MinimapFogOfWar __instance, out float __state)
+        private static void Prefix(MinimapFogOfWar __instance, out float __state) 
         {
             __state = __instance.discoveryDistance;
             if (Cheat_FogOfWar.Value) __instance.discoveryDistance = cheatDiscovery;
@@ -372,13 +373,10 @@ public class kg_LastEpoch_Improvements : MelonMod
             Switch();
         }
     }
-    
-    
-    
 #endif 
 
     
-    //OpenInvneotryPanel invokes at loadingscreen after InventoryPanelUI.Awake, we cannot call StoreMaterialsButtonPress() at this moment
+    //OpenInventoryPanel invokes at loadingscreen after InventoryPanelUI.Awake, we cannot call StoreMaterialsButtonPress() at this moment
     //cause it throws an exception (probably some stuff didn't load yet)
     [HarmonyPatch(typeof(InventoryPanelUI),nameof(InventoryPanelUI.Awake))]
     private static class InventoryPanelUI_Awake_Patch
