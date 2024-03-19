@@ -25,7 +25,7 @@ public class Experimental
             MelonCoroutines.Start(DelayRoutine(__instance));
         }
 
-        private static bool IsFilter(ItemDataUnpacked item)
+        private static bool CheckFilter(ItemDataUnpacked item)
         {
             if (ItemFilterManager.Instance.Filter == null) return false;
             foreach (var rule in ItemFilterManager.Instance.Filter.rules)
@@ -40,15 +40,14 @@ public class Experimental
         private static IEnumerator DelayRoutine(GroundItemLabel item)
         {
             yield return null;
-            if (item == null || !item || item.getItemData() == null) yield break;
-            ItemDataUnpacked itemData = item.getItemData();
+            if (item == null || !item || item.getItemData() is not {} itemData) yield break;
             TextMeshProUGUI tmp = item.itemText;
             if (!tmp) yield break;
 
             bool isFiltered = ShowAffixOnLabel.Value is (DisplayAffixType_GroundLabel.With_Tier_Filter_Only or DisplayAffixType_GroundLabel.Without_Tier_Filter_Only or DisplayAffixType_GroundLabel.Letter_With_Tier_Filter_Only or DisplayAffixType_GroundLabel.Letter_Without_Tier_Filter_Only);
             bool isLetter = ShowAffixOnLabel.Value is (DisplayAffixType_GroundLabel.Letter_With_Tier or DisplayAffixType_GroundLabel.Letter_Without_Tier or DisplayAffixType_GroundLabel.Letter_With_Tier_Filter_Only or DisplayAffixType_GroundLabel.Letter_Without_Tier_Filter_Only);
-            if (isFiltered)
-                if (!IsFilter(itemData)) yield break;
+            
+            if (isFiltered && !CheckFilter(itemData)) yield break;
 
             string itemName = itemData.FullName;
             if (itemData.isUnique() && itemData.affixes.Count == 0)
@@ -60,7 +59,7 @@ public class Experimental
             }
             if (itemData.affixes.Count > 0)
             {
-                if (isLetter) { itemName += " ["; }
+                if (isLetter) itemName += " [";
                 foreach (ItemAffix affix in itemData.affixes)
                 {
                     double roll = Math.Round(affix.getRollFloat() * 100.0, 1);
@@ -80,7 +79,7 @@ public class Experimental
                         _ => ""
                     };
                 }
-                if (isLetter) { itemName += " ]"; }
+                if (isLetter) itemName += " ]";
             }
             tmp.text = "";
             tmp.text = item.emphasized ? itemName.ToUpper() : itemName;

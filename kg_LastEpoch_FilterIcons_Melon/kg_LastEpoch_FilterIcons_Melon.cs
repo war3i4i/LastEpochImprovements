@@ -22,7 +22,9 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll;
     public static MelonPreferences_Entry<DisplayAffixType_GroundLabel> ShowAffixOnLabel;
-    private static MelonPreferences_Entry<bool> FogOfWar;
+#if CHEATVERSION 
+    private static MelonPreferences_Entry<bool> FogOfWar; 
+#endif
     private static MelonPreferences_Entry<bool> AutoStoreCraftMaterials;
     private static GameObject CustomMapIcon;
 
@@ -66,8 +68,10 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         ShowAll = FilterIconsMod.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
         AffixShowRoll = FilterIconsMod.CreateEntry("Show Affix Roll New", DisplayAffixType.None, "Show Affix Roll New", "Show each affix roll on item");
         ShowAffixOnLabel = FilterIconsMod.CreateEntry("Show Affix On Label", DisplayAffixType_GroundLabel.None, "Show Affix On Label Type", "Show each affix roll on item label (ground)");
-        FogOfWar = FilterIconsMod.CreateEntry("Fog fo war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
         AutoStoreCraftMaterials = FilterIconsMod.CreateEntry("AutoStoreCraftMaterials", false, "Auto storage craft materials", "Automatic storage of craft materials from the inventory");
+#if CHEATVERSION
+        FogOfWar = FilterIconsMod.CreateEntry("Fog fo war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
+#endif
         FilterIconsMod.SetFilePath("UserData/kg_LastEpoch_FilterIcons.cfg", autoload: true);
         CreateCustomMapIcon();
     }
@@ -283,6 +287,13 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     {
         private static void Postfix(SettingsPanelTabNavigable __instance)
         {
+#if CHEATVERSION
+            __instance.CreateNewOption("<color=green>Clear fog on map on start</color>", FogOfWar, (fow) =>
+            {
+                FogOfWar.Value = fow;
+                FilterIconsMod.SaveToFile();
+            });
+#endif
             __instance.CreateNewOption_EnumDropdown("<color=green>Affix Show Roll (Tooltip)</color>", "Show affix roll on tooltip text", AffixShowRoll, (i) =>
             {
                 AffixShowRoll.Value = (DisplayAffixType)i;
@@ -298,12 +309,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
                 ShowAll.Value = tf;
                 FilterIconsMod.SaveToFile();
             });
-            __instance.CreateNewOption("<color=red>Clear fog on map on start</color>", FogOfWar, (fow) =>
-            {
-                FogOfWar.Value = fow;
-                FilterIconsMod.SaveToFile();
-            });
-            __instance.CreateNewOption("<color=red>Auto storage craft materials</color>", AutoStoreCraftMaterials, (ascm) =>
+            __instance.CreateNewOption("<color=green>Auto storage craft materials</color>", AutoStoreCraftMaterials, (ascm) =>
             {
                 AutoStoreCraftMaterials.Value = ascm;
                 FilterIconsMod.SaveToFile();
@@ -311,17 +317,17 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         }
     }
 
+#if CHEATVERSION
     [HarmonyPatch(typeof(MinimapFogOfWar), nameof(MinimapFogOfWar.Initialize))]
     private static class MinimapFogOfWar_Initialize_Patch
     {
-        private static bool Prefix(MinimapFogOfWar __instance)
+        private static void Prefix(MinimapFogOfWar __instance)
         {
             if (FogOfWar.Value) { __instance.discoveryDistance = float.MaxValue; }
             else { __instance.discoveryDistance = 20f; }
-
-            return true;
         }
     }
+#endif
 
     [HarmonyPatch(typeof(InventoryPanelUI), nameof(InventoryPanelUI.OpenInventoryPanel))]
     private static class InventoryPanelUI_OpenInventoryPanel_Patch
