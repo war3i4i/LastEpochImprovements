@@ -231,6 +231,14 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
             if (_label != null && _label && _label.tooltipItem) _label.tooltipItem.OnPointerExit(null);
         }
 
+        #if CHEATVERSION
+        private void Update() 
+        {
+            if (showingAffix == this && Input.GetKeyDown(KeyCode.Space))
+                if (RectTransformUtility.RectangleContainsScreenPoint(thisTransform, Input.mousePosition)) _label?.requestPickup();
+        } 
+        #endif
+
         private void FixedUpdate()
         {
             if (!_trackable || !_trackable.activeSelf)
@@ -239,6 +247,8 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
                 return;
             }
 
+            transform.localPosition = DMMap.Instance.WorldtoUI(_trackable.transform.position);
+            
             if (showingAffix == this)
             {
                 bool isMouseInside = RectTransformUtility.RectangleContainsScreenPoint(thisTransform, Input.mousePosition);
@@ -247,7 +257,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
                     showingAffix = null;
                     PointerExit();
                 }
-            } 
+            }
 
             if ((!showingAffix || showingAffix == this) && Input.GetKey(KeyCode.LeftShift))
             {
@@ -258,8 +268,6 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
                     PointerEnter();
                 }
             }
-
-            transform.localPosition = DMMap.Instance.WorldtoUI(_trackable.transform.position);
         }
     }
 
