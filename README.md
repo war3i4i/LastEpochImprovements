@@ -1,7 +1,6 @@
 ﻿# LootFilter Item Map Show to "Last Epoch" game
 #### mod description:
     Mod allows your item from LootFilter to also be shown on map (as unique or set items do). Works in both offline and online
-    Last version 1.3.3
 
 Mod on [NEXUSMODS]
 
@@ -28,9 +27,12 @@ I am using my own mod in Online and everything is fine. But keep in mind that mo
 
 
 ### Links
+* [NEXUSMODS]
+* [melonwiki]
+* [MelonLoader.Installer.exe]
 
-[NEXUSMODS](https://www.nexusmods.com/lastepoch/mods/8)
+[NEXUSMODS]:https://www.nexusmods.com/lastepoch/mods/8
 
-[melonwiki](https://melonwiki.xyz/#/)
+[melonwiki]:https://melonwiki.xyz/#/
 
-[MelonLoader.Installer.exe](https://github.com/HerpDerpinstine/MelonLoader/releases/latest/download/MelonLoader.Installer.exe)
+[MelonLoader.Installer.exe]:https://github.com/HerpDerpinstine/MelonLoader/releases/latest/download/MelonLoader.Installer.exe
