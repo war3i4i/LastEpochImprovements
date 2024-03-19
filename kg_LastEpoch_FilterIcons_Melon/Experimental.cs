@@ -1,15 +1,10 @@
-﻿using System.Collections;
-using System.Reflection;
-using Harmony;
+﻿using Harmony;
 using Il2Cpp;
 using Il2CppItemFiltering;
 using Il2CppTMPro;
-using JetBrains.Annotations;
 using MelonLoader;
-using UnityEngine;
+using System.Collections;
 using static kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon;
-using AccessTools = HarmonyLib.AccessTools;
-using Random = UnityEngine.Random;
 
 namespace kg_LastEpoch_FilterIcons_Melon;
 
@@ -21,7 +16,7 @@ public class Experimental
     //I would even assume that for (maybe) some optimization purposes they're changing TMP Text not via .text = "something" but by directly changing TMP Vertex buffer or smth
     //(that's why we need to set it to empty string first, so it internally updates verticies and then we can set it to the desired value)
     //^ or maybe its all bullshit and im just dumb, who knows
-    [HarmonyPatch(typeof(GroundItemLabel),nameof(GroundItemLabel.SetGroundTooltipText), typeof(bool))]
+    [HarmonyPatch(typeof(GroundItemLabel), nameof(GroundItemLabel.SetGroundTooltipText), typeof(bool))]
     private static class GroundItemLabel_Show_Patch
     {
         private static void Postfix(GroundItemLabel __instance)
@@ -41,7 +36,7 @@ public class Experimental
             }
             return false;
         }
-        
+
         private static IEnumerator DelayRoutine(GroundItemLabel item)
         {
             yield return null;
@@ -49,10 +44,12 @@ public class Experimental
             ItemDataUnpacked itemData = item.getItemData();
             TextMeshProUGUI tmp = item.itemText;
             if (!tmp) yield break;
-            
-            if (ShowAffixOnLabel.Value is DisplayAffixType_GroundLabel.With_Tier_Filter_Only or DisplayAffixType_GroundLabel.Without_Tier_Filter_Only)
+
+            bool isFiltered = ShowAffixOnLabel.Value is (DisplayAffixType_GroundLabel.With_Tier_Filter_Only or DisplayAffixType_GroundLabel.Without_Tier_Filter_Only or DisplayAffixType_GroundLabel.Letter_With_Tier_Filter_Only or DisplayAffixType_GroundLabel.Letter_Without_Tier_Filter_Only);
+            bool isLetter = ShowAffixOnLabel.Value is (DisplayAffixType_GroundLabel.Letter_With_Tier or DisplayAffixType_GroundLabel.Letter_Without_Tier or DisplayAffixType_GroundLabel.Letter_With_Tier_Filter_Only or DisplayAffixType_GroundLabel.Letter_Without_Tier_Filter_Only);
+            if (isFiltered)
                 if (!IsFilter(itemData)) yield break;
-            
+
             string itemName = itemData.FullName;
             if (itemData.isUnique() && itemData.affixes.Count == 0)
             {
@@ -61,28 +58,34 @@ public class Experimental
                 else
                     itemName += $" <color=#FF0000>[LP: {itemData.legendaryPotential}]</color>";
             }
-
             if (itemData.affixes.Count > 0)
-            { 
-                foreach (ItemAffix affix in itemData.affixes) 
+            {
+                if (isLetter) { itemName += " ["; }
+                foreach (ItemAffix affix in itemData.affixes)
                 {
                     double roll = Math.Round(affix.getRollFloat() * 100.0, 1);
                     int tier = affix.DisplayTier;
                     string rollColor = AffixRolls.GetItemRollRarityColor(roll);
                     string tierColor = AffixRolls.GetItemTierColor(tier);
+                    string letter = AffixRolls.GetItemRollRarityLetter(roll);
+                    string letterColor = AffixRolls.GetItemRollRarityColorLetter(roll);
+                    string letterTier = tier > 0 ? $"<color={tierColor}>{tier}</color>" : "";
+                    
                     itemName += ShowAffixOnLabel.Value switch
                     {
                         DisplayAffixType_GroundLabel.With_Tier or DisplayAffixType_GroundLabel.With_Tier_Filter_Only => $" [<color={tierColor}>T{tier}</color> <color={rollColor}>{roll}%</color>]",
                         DisplayAffixType_GroundLabel.Without_Tier or DisplayAffixType_GroundLabel.Without_Tier_Filter_Only => $" [<color={rollColor}>{roll}%</color>]",
+                        DisplayAffixType_GroundLabel.Letter_With_Tier or DisplayAffixType_GroundLabel.Letter_With_Tier_Filter_Only => $" {letterTier}<color={letterColor}>{letter}</color>",
+                        DisplayAffixType_GroundLabel.Letter_Without_Tier or DisplayAffixType_GroundLabel.Letter_Without_Tier_Filter_Only => $" <color={letterColor}>{letter}</color>",
                         _ => ""
                     };
-                    
                 }
+                if (isLetter) { itemName += " ]"; }
             }
             tmp.text = "";
             tmp.text = item.emphasized ? itemName.ToUpper() : itemName;
         }
     }
-    
-  
+
+
 }
