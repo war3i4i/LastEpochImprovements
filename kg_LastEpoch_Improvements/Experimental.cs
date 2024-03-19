@@ -4,9 +4,9 @@ using Il2CppItemFiltering;
 using Il2CppTMPro;
 using MelonLoader;
 using System.Collections;
-using static kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon;
+using static kg_LastEpoch_Improvements.kg_LastEpoch_Improvements;
 
-namespace kg_LastEpoch_FilterIcons_Melon;
+namespace kg_LastEpoch_Improvements;
 
 public class Experimental
 {

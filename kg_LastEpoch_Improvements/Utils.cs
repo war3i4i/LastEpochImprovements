@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.Localization.Components;
 using UnityEngine.UI;
 
-namespace kg_LastEpoch_FilterIcons_Melon;
+namespace kg_LastEpoch_Improvements;
 
 public static class Utils
 {

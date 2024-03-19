@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "kg_LastEpoch_FilterIcons_Melon", "kg_LastEpoch_FilterIcons_Melon\kg_LastEpoch_FilterIcons_Melon.csproj", "{2DD909A8-7D21-49E2-855B-A95ACC075E22}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "kg_LastEpoch_Improvements", "kg_LastEpoch_Improvements\kg_LastEpoch_Improvements.csproj", "{2DD909A8-7D21-49E2-855B-A95ACC075E22}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

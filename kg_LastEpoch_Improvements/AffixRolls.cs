@@ -1,6 +1,6 @@
 ﻿using Il2Cpp;
 
-namespace kg_LastEpoch_FilterIcons_Melon;
+namespace kg_LastEpoch_Improvements;
 
 public static class AffixRolls
 {

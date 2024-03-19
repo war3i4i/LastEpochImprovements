@@ -14,13 +14,16 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon), "kg.LastEpoch.FilterIcons", "1.3.5", "KG")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.5", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
+[assembly: MelonIncompatibleAssemblies("kg.LastEpoch.Improvements")]
+[assembly: MelonColor(ConsoleColor.DarkCyan)]
+[assembly: MelonAuthorColor(ConsoleColor.DarkCyan)]
 
-namespace kg_LastEpoch_FilterIcons_Melon;
+namespace kg_LastEpoch_Improvements;
 
-public class kg_LastEpoch_FilterIcons_Melon : MelonMod
+public class kg_LastEpoch_Improvements : MelonMod
 {
-    private static kg_LastEpoch_FilterIcons_Melon _thistype;
+    private static kg_LastEpoch_Improvements _thistype;
     private static MelonPreferences_Category FilterIconsMod;
     private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll;
