@@ -9,6 +9,7 @@ using MelonLoader;
 using UnityEngine;
 using UnityEngine.Localization.Components;
 using UnityEngine.UI;
+using AccessTools = HarmonyLib.AccessTools;
 
 namespace kg_LastEpoch_Improvements;
 

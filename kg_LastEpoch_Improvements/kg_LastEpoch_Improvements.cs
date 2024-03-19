@@ -1,17 +1,9 @@
-﻿using System;
-using System.Collections;
-using System.Reflection.Metadata;
-using HarmonyLib;
-using Il2Cpp;
-using Il2CppDMM;
+﻿using Il2CppDMM;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppItemFiltering;
+using Il2CppLE.UI;
 using Il2CppTMPro;
-using JetBrains.Annotations;
 using MelonLoader;
-using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 [assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.5", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
@@ -26,7 +18,8 @@ public class kg_LastEpoch_Improvements : MelonMod
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll;
     public static MelonPreferences_Entry<DisplayAffixType_GroundLabel> ShowAffixOnLabel;
 #if CHEATVERSION 
-    private static MelonPreferences_Entry<bool> FogOfWar; 
+    private static MelonPreferences_Entry<bool> Cheat_FogOfWar; 
+    private static MelonPreferences_Entry<bool> Cheat_EnhancedCamera; 
 #endif
     private static MelonPreferences_Entry<bool> AutoStoreCraftMaterials;
     private static GameObject CustomMapIcon;
@@ -59,7 +52,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         textComponent.rectTransform.anchoredPosition = new Vector2(64, 0);
         textComponent.horizontalOverflow = HorizontalWrapMode.Overflow;
         textComponent.verticalOverflow = VerticalWrapMode.Overflow;
-        Outline outline = textComponent.AddComponent<Outline>();
+        Outline outline = textComponent.AddComponent<Outline>(); 
         outline.effectColor = Color.black;
         CustomMapIcon.AddComponent<CustomIconProcessor>();
     }
@@ -73,7 +66,8 @@ public class kg_LastEpoch_Improvements : MelonMod
         ShowAffixOnLabel = ImprovementsModCategory.CreateEntry("Show Affix On Label", DisplayAffixType_GroundLabel.None, "Show Affix On Label Type", "Show each affix roll on item label (ground)");
         AutoStoreCraftMaterials = ImprovementsModCategory.CreateEntry("AutoStoreCraftMaterials", false, "Auto storage craft materials", "Automatic storage of craft materials from the inventory");
 #if CHEATVERSION
-        FogOfWar = ImprovementsModCategory.CreateEntry("Fog fo war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
+        Cheat_FogOfWar = ImprovementsModCategory.CreateEntry("Fog fo war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
+        Cheat_EnhancedCamera = ImprovementsModCategory.CreateEntry("Enhanced Camera", false, "Enhanced camera", "Enhanced camera angles and zoom");
 #endif
         ImprovementsModCategory.SetFilePath("UserData/kg_LastEpoch_Improvements.cfg", autoload: true);
         CreateCustomMapIcon();
@@ -194,10 +188,6 @@ public class kg_LastEpoch_Improvements : MelonMod
                     customMapIcon.GetComponent<Image>().color = GetColorForItemRarity(itemData);
                     customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = icon;
                     
-                    //check for @pickup [experimental]
-                    if (!string.IsNullOrEmpty(rule.nameOverride) && rule.nameOverride.Contains("@pickup", StringComparison.OrdinalIgnoreCase))
-                        label.requestPickup();
-                        
                     return;
                 }
             }
@@ -250,13 +240,13 @@ public class kg_LastEpoch_Improvements : MelonMod
             if (_label != null && _label && _label.tooltipItem) _label.tooltipItem.OnPointerExit(null);
         }
 
-        #if CHEATVERSION
+#if CHEATVERSION
         private void Update() 
         {
             if (showingAffix == this && Input.GetKeyDown(KeyCode.Space))
                 if (RectTransformUtility.RectangleContainsScreenPoint(thisTransform, Input.mousePosition)) _label?.requestPickup();
         } 
-        #endif
+#endif
 
         private void FixedUpdate()
         {
@@ -296,10 +286,16 @@ public class kg_LastEpoch_Improvements : MelonMod
         private static void Postfix(SettingsPanelTabNavigable __instance)
         {
 #if CHEATVERSION
-            __instance.CreateNewOption("<color=green>Clear fog on map on start</color>", FogOfWar, (tf) =>
+            __instance.CreateNewOption("<color=green>[Cheat] Clear fog on map on start</color>", Cheat_FogOfWar, (tf) =>
             {
-                FogOfWar.Value = tf;
+                Cheat_FogOfWar.Value = tf;
                 ImprovementsModCategory.SaveToFile();
+            });
+            __instance.CreateNewOption("<color=green>[Cheat] Enhanced camera</color>", Cheat_EnhancedCamera, (tf) =>
+            {
+                Cheat_EnhancedCamera.Value = tf;
+                ImprovementsModCategory.SaveToFile(); 
+                CameraManager_Start_Patch.Switch();
             });
 #endif
             __instance.CreateNewOption_EnumDropdown("<color=green>Affix Show Roll (Tooltip)</color>", "Show affix roll on tooltip text", AffixShowRoll, (i) =>
@@ -333,18 +329,69 @@ public class kg_LastEpoch_Improvements : MelonMod
         private static void Prefix(MinimapFogOfWar __instance, out float __state)
         {
             __state = __instance.discoveryDistance;
-            if (FogOfWar.Value) __instance.discoveryDistance = cheatDiscovery;
+            if (Cheat_FogOfWar.Value) __instance.discoveryDistance = cheatDiscovery;
         }
         private static void Postfix(MinimapFogOfWar __instance, float __state) => __instance.discoveryDistance = __state;
     }
-#endif
+    
+    [HarmonyPatch(typeof(CameraManager),nameof(CameraManager.Start))] 
+    private static class CameraManager_Start_Patch
+    {
+        private static float LE_cameraAngleDefault;
+        private static float LE_cameraAngleMax;
+        private static float LE_cameraAngleMin;
+        private static float LE_zoomMin;
+        
+        private const float cheatAngles = 55f;
+        private const float cheatZoomMin = -40f;
+        
+        public static void Switch()
+        {
+            if (!CameraManager.instance) return;
+            if (Cheat_EnhancedCamera.Value)
+            {
+                CameraManager.instance.cameraAngleDefault = cheatAngles;
+                CameraManager.instance.cameraAngleMax = cheatAngles;
+                CameraManager.instance.cameraAngleMin = cheatAngles;
+                CameraManager.instance.zoomMin = cheatZoomMin;
+            }
+            else
+            {
+                CameraManager.instance.cameraAngleDefault = LE_cameraAngleDefault;
+                CameraManager.instance.cameraAngleMax = LE_cameraAngleMax;
+                CameraManager.instance.cameraAngleMin = LE_cameraAngleMin;
+                CameraManager.instance.zoomMin = LE_zoomMin;
+            }
+        }
+        private static void Postfix(CameraManager __instance)
+        {
+            LE_cameraAngleDefault = __instance.cameraAngleDefault;
+            LE_cameraAngleMax = __instance.cameraAngleMax;
+            LE_cameraAngleMin = __instance.cameraAngleMin;
+            LE_zoomMin = __instance.zoomMin;
+            Switch();
+        }
+    }
+    
+    
+    
+#endif 
 
+    
+    //OpenInvneotryPanel invokes at loadingscreen after InventoryPanelUI.Awake, we cannot call StoreMaterialsButtonPress() at this moment
+    //cause it throws an exception (probably some stuff didn't load yet)
+    [HarmonyPatch(typeof(InventoryPanelUI),nameof(InventoryPanelUI.Awake))]
+    private static class InventoryPanelUI_Awake_Patch
+    {
+        public static int AwakeFrame;
+        private static void Postfix(InventoryPanelUI __instance) => AwakeFrame = Time.frameCount;
+    }
     [HarmonyPatch(typeof(InventoryPanelUI), nameof(InventoryPanelUI.OpenInventoryPanel))]
     private static class InventoryPanelUI_OpenInventoryPanel_Patch
     {
         private static void Postfix(InventoryPanelUI __instance)
         {
-            if (AutoStoreCraftMaterials.Value)
+            if (AutoStoreCraftMaterials.Value && Time.frameCount != InventoryPanelUI_Awake_Patch.AwakeFrame)
                 __instance.StoreMaterialsButtonPress();
         }
     }

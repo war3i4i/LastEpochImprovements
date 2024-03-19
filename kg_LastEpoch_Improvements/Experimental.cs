@@ -1,5 +1,4 @@
-﻿using Harmony;
-using Il2Cpp;
+﻿using Il2Cpp;
 using Il2CppItemFiltering;
 using Il2CppTMPro;
 using MelonLoader;
@@ -40,7 +39,7 @@ public class Experimental
         private static IEnumerator DelayRoutine(GroundItemLabel item)
         {
             yield return null;
-            if (item == null || !item || item.getItemData() is not {} itemData) yield break;
+            if (item == null || !item || item.getItemData() is not { } itemData) yield break;
             TextMeshProUGUI tmp = item.itemText;
             if (!tmp) yield break;
 
@@ -57,6 +56,7 @@ public class Experimental
                 else
                     itemName += $" <color=#FF0000>[LP: {itemData.legendaryPotential}]</color>";
             }
+
             if (itemData.affixes.Count > 0)
             {
                 if (isLetter) itemName += " [";
@@ -69,7 +69,7 @@ public class Experimental
                     string letter = AffixRolls.GetItemRollRarityLetter(roll);
                     string letterColor = AffixRolls.GetItemRollRarityColorLetter(roll);
                     string letterTier = tier > 0 ? $"<color={tierColor}>{tier}</color>" : "";
-                    
+
                     itemName += ShowAffixOnLabel.Value switch
                     {
                         DisplayAffixType_GroundLabel.With_Tier or DisplayAffixType_GroundLabel.With_Tier_Filter_Only => $" [<color={tierColor}>T{tier}</color> <color={rollColor}>{roll}%</color>]",
@@ -79,12 +79,12 @@ public class Experimental
                         _ => ""
                     };
                 }
+
                 if (isLetter) itemName += " ]";
             }
+
             tmp.text = "";
             tmp.text = item.emphasized ? itemName.ToUpper() : itemName;
         }
     }
-
-
 }
