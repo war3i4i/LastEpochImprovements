@@ -1,8 +1,7 @@
 ﻿# LootFilter Item Map Show to "Last Epoch" game
 #### mod description:
-    Mod allows your item from LootFilter to also be shown on map (as unique or set items do). Works in both offline and online
-
-Mod on [NEXUSMODS]
+## Mod allows your item from LootFilter to also be shown on map (as unique or set items do). Works in both offline and online
+## Mod on [NEXUSMODS]
 
 How to use:
 Any rule that has "Emphasized" turned on will automatically be shown on map
