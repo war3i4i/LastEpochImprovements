@@ -47,7 +47,7 @@ public static class AffixRolls
     }
     
     //style2 
-    private static string GetItemRollRarityColor(double roll)
+    public static string GetItemRollRarityColor(double roll)
         => roll switch
         {
             < 20 => "#D2D2D2", //poor
@@ -58,7 +58,7 @@ public static class AffixRolls
             < 95 => "#FA9E3D", //legendary
             _ => "#FA9E3D" //artifact
         };
-    private static string GetItemTierColor(int tier)
+    public static string GetItemTierColor(int tier)
         => tier switch
         {
             1 => "#D2D2D2", //poor
