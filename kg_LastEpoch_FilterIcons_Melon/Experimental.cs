@@ -2,10 +2,12 @@
 using System.Reflection;
 using Harmony;
 using Il2Cpp;
+using Il2CppItemFiltering;
 using Il2CppTMPro;
 using JetBrains.Annotations;
 using MelonLoader;
 using UnityEngine;
+using static kg_LastEpoch_FilterIcons_Melon.kg_LastEpoch_FilterIcons_Melon;
 using AccessTools = HarmonyLib.AccessTools;
 using Random = UnityEngine.Random;
 
@@ -13,29 +15,51 @@ namespace kg_LastEpoch_FilterIcons_Melon;
 
 public class Experimental
 {
+    //For some reason EHG TextMeshPro on item tooltip literally has different value than displayed text itself. I didn't manage to find a way to set it directly in some patch
+    //so as a workaround (even not most optimized) we just use coroutine to skip one frame yield return null and then set the text. Important thing is that we need to first
+    //set text to empty string and then to the desired value. Otherwise it won't work (maybe some internal OnTextChanged event or smth).
+    //I would even assume that for (maybe) some optimization purposes they're changing TMP Text not via .text = "something" but by directly changing TMP Vertex buffer or smth
+    //(that's why we need to set it to empty string first, so it internally updates verticies and then we can set it to the desired value)
+    //^ or maybe its all bullshit and im just dumb, who knows
     [HarmonyPatch(typeof(GroundItemLabel),nameof(GroundItemLabel.SetGroundTooltipText), typeof(bool))]
-    private static class GroundItemLabel_Show_Patch4
+    private static class GroundItemLabel_Show_Patch
     {
         private static void Postfix(GroundItemLabel __instance)
         {
-            if (kg_LastEpoch_FilterIcons_Melon.ShowAffixOnLabel.Value is kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.None) return;
+            if (ShowAffixOnLabel.Value is DisplayAffixType_GroundLabel.None) return;
             MelonCoroutines.Start(DelayRoutine(__instance));
         }
 
+        private static bool IsFilter(ItemDataUnpacked item)
+        {
+            if (ItemFilterManager.Instance.Filter == null) return false;
+            foreach (var rule in ItemFilterManager.Instance.Filter.rules)
+            {
+                if (!rule.isEnabled || rule.type is Rule.RuleOutcome.HIDE) continue;
+                bool result = rule.Match(item);
+                if (result) return true;
+            }
+            return false;
+        }
+        
         private static IEnumerator DelayRoutine(GroundItemLabel item)
         {
             yield return null;
             if (item == null || !item || item.getItemData() == null) yield break;
-            ItemDataUnpacked itemData = item.getItemData(); 
+            ItemDataUnpacked itemData = item.getItemData();
             TextMeshProUGUI tmp = item.itemText;
             if (!tmp) yield break;
+            
+            if (ShowAffixOnLabel.Value is DisplayAffixType_GroundLabel.With_Tier_Filter_Only or DisplayAffixType_GroundLabel.Without_Tier_Filter_Only)
+                if (!IsFilter(itemData)) yield break;
+            
             string itemName = itemData.FullName;
             if (itemData.isUnique() && itemData.affixes.Count == 0)
             {
                 if (itemData.weaversWill > 0)
-                    itemName += $" <color=red>[WW: {itemData.weaversWill}]</color>";
+                    itemName += $" <color=#FF0000>[WW: {itemData.weaversWill}]</color>";
                 else
-                    itemName += $" <color=red>[LP: {itemData.legendaryPotential}]</color>";
+                    itemName += $" <color=#FF0000>[LP: {itemData.legendaryPotential}]</color>";
             }
 
             if (itemData.affixes.Count > 0)
@@ -46,18 +70,17 @@ public class Experimental
                     int tier = affix.DisplayTier;
                     string rollColor = AffixRolls.GetItemRollRarityColor(roll);
                     string tierColor = AffixRolls.GetItemTierColor(tier);
-                    itemName += kg_LastEpoch_FilterIcons_Melon.ShowAffixOnLabel.Value switch
+                    itemName += ShowAffixOnLabel.Value switch
                     {
-                        kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.With_Tier => $" [<color={tierColor}>T{tier}</color> <color={rollColor}>{roll}%</color>]",
-                        kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.Without_Tier => $" [<color={rollColor}>{roll}%</color>]",
+                        DisplayAffixType_GroundLabel.With_Tier or DisplayAffixType_GroundLabel.With_Tier_Filter_Only => $" [<color={tierColor}>T{tier}</color> <color={rollColor}>{roll}%</color>]",
+                        DisplayAffixType_GroundLabel.Without_Tier or DisplayAffixType_GroundLabel.Without_Tier_Filter_Only => $" [<color={rollColor}>{roll}%</color>]",
                         _ => ""
                     };
                     
                 }
             }
             tmp.text = "";
-            if (item.emphasized) itemName = $"{itemName.ToUpper()}";
-            tmp.text = itemName;
+            tmp.text = item.emphasized ? itemName.ToUpper() : itemName;
         }
     }
     

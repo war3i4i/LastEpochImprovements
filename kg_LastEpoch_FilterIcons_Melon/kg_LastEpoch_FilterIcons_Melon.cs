@@ -24,8 +24,8 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     public static MelonPreferences_Entry<DisplayAffixType_GroundLabel> ShowAffixOnLabel;
     private static GameObject CustomMapIcon;
 
-    private enum DisplayAffixType { None, Old_Style, New_Style };
-    public enum DisplayAffixType_GroundLabel { None, Without_Tier, With_Tier };
+    private enum DisplayAffixType { None, Old_Style, New_Style }
+    public enum DisplayAffixType_GroundLabel { None, Without_Tier, Without_Tier_Filter_Only, With_Tier, With_Tier_Filter_Only }
 
     private static void CreateCustomMapIcon() 
     {
@@ -146,7 +146,7 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
     {
         private static bool ShouldShow(Rule rule)
         {
-            if (!rule.isEnabled || rule.type == Rule.RuleOutcome.HIDE) return false;
+            if (!rule.isEnabled || rule.type is Rule.RuleOutcome.HIDE) return false;
             if (ShowAll.Value) return true;
             return rule.emphasized;
         }
@@ -154,34 +154,32 @@ public class kg_LastEpoch_FilterIcons_Melon : MelonMod
         private static void Postfix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label)
         {
             ItemFilter filter = ItemFilterManager.Instance.Filter;
-            if (filter != null)
+            if (filter == null) return;
+            foreach (Rule rule in filter.rules)
             {
-                foreach (Rule rule in filter.rules)
+                if (!ShouldShow(rule)) continue;
+                if (rule.Match(itemData))
                 {
-                    if (!ShouldShow(rule)) continue;
-                    if (rule.Match(itemData))
+                    GameObject customMapIcon = Object.Instantiate(CustomMapIcon, DMMap.Instance.iconContainer.transform);
+                    customMapIcon.SetActive(true);
+                    customMapIcon.GetComponent<CustomIconProcessor>().Init(__instance.gameObject, label);
+                    string path = ItemList.instance.GetBaseTypeName(itemData.itemType).Replace(" ", "_").ToLower();
+                    string itemName = itemData.BaseNameForTooltipSprite;
+                    if (itemData.isUniqueSetOrLegendary())
                     {
-                        GameObject customMapIcon = Object.Instantiate(CustomMapIcon, DMMap.Instance.iconContainer.transform);
-                        customMapIcon.SetActive(true);
-                        customMapIcon.GetComponent<CustomIconProcessor>().Init(__instance.gameObject, label);
-                        string path = ItemList.instance.GetBaseTypeName(itemData.itemType).Replace(" ", "_").ToLower();
-                        string itemName = itemData.BaseNameForTooltipSprite;
-                        if (itemData.isUniqueSetOrLegendary())
+                        customMapIcon.GetComponent<CustomIconProcessor>().ShowLegendaryPotential(itemData.legendaryPotential, itemData.weaversWill);
+                        if (UniqueList.instance.uniques.Count > itemData.uniqueID && UniqueList.instance.uniques.get(itemData.uniqueID) is { } entry)
                         {
-                            customMapIcon.GetComponent<CustomIconProcessor>().ShowLegendaryPotential(itemData.legendaryPotential, itemData.weaversWill);
-                            if (UniqueList.instance.uniques.Count > itemData.uniqueID && UniqueList.instance.uniques.get(itemData.uniqueID) is { } entry)
-                            {
-                                path = "uniques";
-                                itemName = entry.name.Replace(" ", "_");
-                            }
+                            path = "uniques";
+                            itemName = entry.name.Replace(" ", "_");
                         }
-
-                        Sprite icon = Resources.Load<Sprite>($"gear/{path}/{itemName}");
-                        customMapIcon.GetComponent<Image>().sprite = ItemList.instance.defaultItemBackgroundSprite;
-                        customMapIcon.GetComponent<Image>().color = GetColorForItemRarity(itemData);
-                        customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = icon;
-                        return;
                     }
+
+                    Sprite icon = Resources.Load<Sprite>($"gear/{path}/{itemName}");
+                    customMapIcon.GetComponent<Image>().sprite = ItemList.instance.defaultItemBackgroundSprite;
+                    customMapIcon.GetComponent<Image>().color = GetColorForItemRarity(itemData);
+                    customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = icon;
+                    return;
                 }
             }
         }
