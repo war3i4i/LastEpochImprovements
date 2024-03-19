@@ -39,21 +39,42 @@ public class Experimental
             }
 
             if (itemData.affixes.Count > 0)
-            { 
+            {
+                itemName += kg_LastEpoch_FilterIcons_Melon.ShowAffixOnLabel.Value switch
+                {
+                    kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.With_Tier => "",
+                    kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.Without_Tier => "",
+                    kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.Letter_WithTier => " [",
+                    kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.Letter_Without_Tier => " [",
+                    _ => ""
+                };
                 foreach (ItemAffix affix in itemData.affixes) 
                 {
                     double roll = Math.Round(affix.getRollFloat() * 100.0, 1);
                     int tier = affix.DisplayTier;
                     string rollColor = AffixRolls.GetItemRollRarityColor(roll);
                     string tierColor = AffixRolls.GetItemTierColor(tier);
+                    string letter = AffixRolls.GetItemRollRarityLetter(roll);
+                    string letterColor = AffixRolls.GetItemRollRarityColorLetter(roll);
+                    string letterTier = tier > 0 ? $"<color={tierColor}>{tier}</color>" : "";
                     itemName += kg_LastEpoch_FilterIcons_Melon.ShowAffixOnLabel.Value switch
                     {
                         kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.With_Tier => $" [<color={tierColor}>T{tier}</color> <color={rollColor}>{roll}%</color>]",
                         kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.Without_Tier => $" [<color={rollColor}>{roll}%</color>]",
+                        kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.Letter_WithTier => $" {letterTier}<color={letterColor}>{letter}</color>",
+                        kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.Letter_Without_Tier => $" <color={letterColor}>{letter}</color>",
                         _ => ""
                     };
                     
                 }
+                itemName += kg_LastEpoch_FilterIcons_Melon.ShowAffixOnLabel.Value switch
+                {
+                    kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.With_Tier => "",
+                    kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.Without_Tier => "",
+                    kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.Letter_WithTier => " ]",
+                    kg_LastEpoch_FilterIcons_Melon.DisplayAffixType_GroundLabel.Letter_Without_Tier => " ]",
+                    _ => ""
+                };
             }
             tmp.text = "";
             if (item.emphasized) itemName = $"{itemName.ToUpper()}";
