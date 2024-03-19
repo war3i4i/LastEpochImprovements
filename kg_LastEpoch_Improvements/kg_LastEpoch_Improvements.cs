@@ -193,6 +193,11 @@ public class kg_LastEpoch_Improvements : MelonMod
                     customMapIcon.GetComponent<Image>().sprite = ItemList.instance.defaultItemBackgroundSprite;
                     customMapIcon.GetComponent<Image>().color = GetColorForItemRarity(itemData);
                     customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = icon;
+                    
+                    //check for @pickup [experimental]
+                    if (!string.IsNullOrEmpty(rule.nameOverride) && rule.nameOverride.Contains("@pickup", StringComparison.OrdinalIgnoreCase))
+                        label.requestPickup();
+                        
                     return;
                 }
             }
