@@ -94,13 +94,13 @@ public class kg_LastEpoch_Improvements : MelonMod
             __result = AffixShowRoll.Value switch
             {
                 DisplayAffixType.Old_Style => __result.Style1_AffixRoll(affix),
-                DisplayAffixType.New_Style => __result.Style2_AffixRoll(affix),
-                DisplayAffixType.Letter_Style => __result.Letter_Style_AffixRoll(affix),
+                DisplayAffixType.New_Style => __result.Style2_AffixRoll(affix), 
+                DisplayAffixType.Letter_Style => __result.Letter_Style_AffixRoll(affix), 
                 _ => __result 
             };
         }
-    }
-
+    }  
+ 
     [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.UniqueBasicModFormatter))]
     private static class TooltipItemManager_FormatUniqueModAffixString_Patch 
     {
@@ -116,7 +116,7 @@ public class kg_LastEpoch_Improvements : MelonMod
             };
         }
     }
-     
+    
     [HarmonyPatch(typeof(TooltipItemManager),nameof(TooltipItemManager.ImplicitFormatter))]
     private static class TooltipItemManager_FormatMod_Patch
     {
@@ -245,14 +245,6 @@ public class kg_LastEpoch_Improvements : MelonMod
         {
             if (_label != null && _label && _label.tooltipItem) _label.tooltipItem.OnPointerExit(null);
         }
-
-#if CHEATVERSION
-        private void Update() 
-        {
-            if (showingAffix == this && Input.GetKeyDown(KeyCode.Space))
-                if (RectTransformUtility.RectangleContainsScreenPoint(thisTransform, Input.mousePosition)) _label?.requestPickup();
-        } 
-#endif
 
         private void FixedUpdate()
         {
