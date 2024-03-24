@@ -27,7 +27,7 @@ public class Experimental
         private static bool CheckFilter(ItemDataUnpacked item)
         {
             if (ItemFilterManager.Instance.Filter == null) return false;
-            foreach (var rule in ItemFilterManager.Instance.Filter.rules)
+            foreach (Rule rule in ItemFilterManager.Instance.Filter.rules)
             {
                 if (!rule.isEnabled || rule.type is Rule.RuleOutcome.HIDE) continue;
                 bool result = rule.Match(item);
