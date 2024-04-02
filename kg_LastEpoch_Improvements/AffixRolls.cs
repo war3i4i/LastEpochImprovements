@@ -1,5 +1,4 @@
-﻿using Il2Cpp;
-
+﻿
 namespace kg_LastEpoch_Improvements;
 
 public static class AffixRolls
@@ -82,7 +81,6 @@ public static class AffixRolls
 
         return finishedString.Insert(lastNewLine, toInsert);
     }
-
     public static string Style2_AffixRoll(this string affixStr, ItemAffix affix)
     {
         float roll = affix.getRollFloat();
@@ -164,4 +162,23 @@ public static class AffixRolls
         float roll = item.getImplictRollFloat((byte)implicitNumber);
         return Modify_Letter(roll, -1, implicitStr);
     }
+
+
+    //DD_Style
+ private static string DD_Style(int tier, string finishedString)
+    {
+        string tierStr = tier > 0 ? $"  T{tier}": "";
+        int lastNewLine = finishedString.LastIndexOf("\n");
+        if (lastNewLine == -1)
+        {
+            return $"{finishedString}{tierStr}";
+        }
+        return $"{finishedString.Insert(lastNewLine,$"{tierStr}")}";
+    }
+
+    public static string DD_Style_AffixRoll(this string affixStr, ItemAffix affix)
+    {
+        return DD_Style(affix.DisplayTier, affixStr);
+    }
+
 }

@@ -1,18 +1,16 @@
 ﻿using Il2CppDMM;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppItemFiltering;
-using Il2CppLE.UI;
-using Il2CppTMPro;
 using MelonLoader;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.5", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.Kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.5", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
 
 namespace kg_LastEpoch_Improvements;
 
-public class kg_LastEpoch_Improvements : MelonMod
+public class Kg_LastEpoch_Improvements : MelonMod
 {
-    private static kg_LastEpoch_Improvements _thistype;
+    private static Kg_LastEpoch_Improvements _thistype;
     private static MelonPreferences_Category ImprovementsModCategory;
     private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll;
@@ -24,10 +22,10 @@ public class kg_LastEpoch_Improvements : MelonMod
     private static MelonPreferences_Entry<bool> AutoStoreCraftMaterials;
     private static GameObject CustomMapIcon;
 
-    private enum DisplayAffixType { None, Old_Style, New_Style, Letter_Style };
-    public enum DisplayAffixType_GroundLabel { None, Without_Tier, Without_Tier_Filter_Only, With_Tier, With_Tier_Filter_Only, Letter_Without_Tier, Letter_Without_Tier_Filter_Only, Letter_With_Tier, Letter_With_Tier_Filter_Only }
+    private enum DisplayAffixType { None, Old_Style, New_Style, Letter_Style, DD_Style };
+    public enum DisplayAffixType_GroundLabel { None, Without_Tier, With_Tier, Letter_Without_Tier, Letter_With_Tier, DD_Tier }
 
-    private static void CreateCustomMapIcon() 
+    private static void CreateCustomMapIcon()
     {
         ClassInjector.RegisterTypeInIl2Cpp<CustomIconProcessor>();
         CustomMapIcon = new GameObject("kg_CustomMapIcon") { hideFlags = HideFlags.HideAndDontSave };
@@ -52,7 +50,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         textComponent.rectTransform.anchoredPosition = new Vector2(64, 0);
         textComponent.horizontalOverflow = HorizontalWrapMode.Overflow;
         textComponent.verticalOverflow = VerticalWrapMode.Overflow;
-        Outline outline = textComponent.AddComponent<Outline>(); 
+        Outline outline = textComponent.AddComponent<Outline>();
         outline.effectColor = Color.black;
         CustomMapIcon.AddComponent<CustomIconProcessor>();
     }
@@ -94,15 +92,16 @@ public class kg_LastEpoch_Improvements : MelonMod
             __result = AffixShowRoll.Value switch
             {
                 DisplayAffixType.Old_Style => __result.Style1_AffixRoll(affix),
-                DisplayAffixType.New_Style => __result.Style2_AffixRoll(affix), 
-                DisplayAffixType.Letter_Style => __result.Letter_Style_AffixRoll(affix), 
-                _ => __result 
+                DisplayAffixType.New_Style => __result.Style2_AffixRoll(affix),
+                DisplayAffixType.Letter_Style => __result.Letter_Style_AffixRoll(affix),
+                DisplayAffixType.DD_Style => __result.DD_Style_AffixRoll(affix),
+                _ => __result
             };
         }
-    }  
- 
+    }
+
     [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.UniqueBasicModFormatter))]
-    private static class TooltipItemManager_FormatUniqueModAffixString_Patch 
+    private static class TooltipItemManager_FormatUniqueModAffixString_Patch
     {
         private static void Postfix(ItemDataUnpacked item, ref string __result, int uniqueModIndex, float modifierValue)
         {
@@ -116,8 +115,8 @@ public class kg_LastEpoch_Improvements : MelonMod
             };
         }
     }
-    
-    [HarmonyPatch(typeof(TooltipItemManager),nameof(TooltipItemManager.ImplicitFormatter))]
+
+    [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.ImplicitFormatter))]
     private static class TooltipItemManager_FormatMod_Patch
     {
         private static void Postfix(ItemDataUnpacked item, int implicitNumber, ref string __result, bool isComparsionItem)
@@ -135,25 +134,11 @@ public class kg_LastEpoch_Improvements : MelonMod
                 DisplayAffixType.New_Style => __result.Style2_Implicit(itemToUse, implicitNumber),
                 DisplayAffixType.Letter_Style => __result.Letter_Style_Implicit(itemToUse, implicitNumber),
                 _ => __result
-            }; 
+            };
         }
     }
 
-    [HarmonyPatch(typeof(Rule), nameof(Rule.Match))]
-    private static class Rule_Match_Patch
-    {
-        private static void Postfix(Rule __instance, ItemDataUnpacked data, ref bool __result)
-        {
-            if (!__instance.isEnabled) return;
 
-            string ruleNameToLower = __instance.nameOverride.ToLower();
-            if (string.IsNullOrWhiteSpace(ruleNameToLower)) return;
-            int indexOf = ruleNameToLower.IndexOf("lpmin:", StringComparison.Ordinal);
-            if (indexOf == -1) return;
-            char number = ruleNameToLower[indexOf + 6];
-            if (int.TryParse(number.ToString(), out int lpmin)) __result &= data.legendaryPotential >= lpmin;
-        }
-    }
 
     [HarmonyPatch(typeof(GroundItemVisuals), nameof(GroundItemVisuals.initialise), typeof(ItemDataUnpacked), typeof(uint), typeof(GroundItemLabel), typeof(GroundItemRarityVisuals), typeof(bool))]
     private static class GroundItemVisuals_initialise_Patch2
@@ -183,6 +168,7 @@ public class kg_LastEpoch_Improvements : MelonMod
                     {
                         customMapIcon.GetComponent<CustomIconProcessor>().ShowLegendaryPotential(itemData.legendaryPotential, itemData.weaversWill);
                         if (UniqueList.instance.uniques.Count > itemData.uniqueID && UniqueList.instance.uniques.get(itemData.uniqueID) is { } entry)
+
                         {
                             path = "uniques";
                             itemName = entry.name.Replace(" ", "_");
@@ -193,7 +179,7 @@ public class kg_LastEpoch_Improvements : MelonMod
                     customMapIcon.GetComponent<Image>().sprite = ItemList.instance.defaultItemBackgroundSprite;
                     customMapIcon.GetComponent<Image>().color = GetColorForItemRarity(itemData);
                     customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = icon;
-                    
+
                     return;
                 }
             }
@@ -225,7 +211,7 @@ public class kg_LastEpoch_Improvements : MelonMod
             if (lp > 0)
             {
                 _text.text += $"{lp}";
-                _text.color = new Color(1f, 0.5f, 0f);
+                _text.color = new Color(0f, 1f, 0f);
             }
             else if (ww > 0)
             {
@@ -255,18 +241,18 @@ public class kg_LastEpoch_Improvements : MelonMod
             }
 
             transform.localPosition = DMMap.Instance.WorldtoUI(_trackable.transform.position);
-            
+
             if (showingAffix == this)
             {
                 bool isMouseInside = RectTransformUtility.RectangleContainsScreenPoint(thisTransform, Input.mousePosition);
-                if (!isMouseInside || !Input.GetKey(KeyCode.LeftShift))
+                if (!isMouseInside)
                 {
                     showingAffix = null;
                     PointerExit();
                 }
             }
 
-            if ((!showingAffix || showingAffix == this) && Input.GetKey(KeyCode.LeftShift))
+            if (!showingAffix || showingAffix == this)
             {
                 bool isMouseInside = RectTransformUtility.RectangleContainsScreenPoint(thisTransform, Input.mousePosition);
                 if (isMouseInside)
@@ -276,7 +262,7 @@ public class kg_LastEpoch_Improvements : MelonMod
                 }
             }
         }
-    } 
+    }
 
     [HarmonyPatch(typeof(SettingsPanelTabNavigable), nameof(SettingsPanelTabNavigable.Awake))]
     private static class SettingsPanelTabNavigable_Awake_Patch
@@ -371,12 +357,12 @@ public class kg_LastEpoch_Improvements : MelonMod
             Switch();
         }
     }
-#endif 
+#endif
 
-    
+
     //OpenInventoryPanel invokes at loadingscreen after InventoryPanelUI.Awake, we cannot call StoreMaterialsButtonPress() at this moment
     //cause it throws an exception (probably some stuff didn't load yet)
-    [HarmonyPatch(typeof(InventoryPanelUI),nameof(InventoryPanelUI.Awake))]
+    [HarmonyPatch(typeof(InventoryPanelUI), nameof(InventoryPanelUI.Awake))]
     private static class InventoryPanelUI_Awake_Patch
     {
         public static int AwakeFrame;
