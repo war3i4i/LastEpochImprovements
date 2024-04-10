@@ -1,4 +1,5 @@
-﻿using Il2CppTMPro;
+﻿using System.Text;
+using Il2CppTMPro;
 using MelonLoader;
 using static kg_LastEpoch_Improvements.Kg_LastEpoch_Improvements;
 
@@ -6,12 +7,6 @@ namespace kg_LastEpoch_Improvements;
 
 public class Experimental
 {
-    //For some reason EHG TextMeshPro on item tooltip literally has different value than displayed text itself. I didn't manage to find a way to set it directly in some patch
-    //so as a workaround (even not most optimized) we just use coroutine to skip one frame yield return null and then set the text. Important thing is that we need to first
-    //set text to empty string and then to the desired value. Otherwise it won't work (maybe some internal OnTextChanged event or smth).
-    //I would even assume that for (maybe) some optimization purposes they're changing TMP Text not via .text = "something" but by directly changing TMP Vertex buffer or smth
-    //(that's why we need to set it to empty string first, so it internally updates verticies and then we can set it to the desired value)
-    //^ or maybe its all bullshit and im just dumb, who knows
     [HarmonyPatch(typeof(GroundItemLabel), nameof(GroundItemLabel.SetGroundTooltipText), typeof(bool))]
     private static class GroundItemLabel_Show_Patch
     {
@@ -21,16 +16,13 @@ public class Experimental
             MelonCoroutines.Start(DelayRoutine(__instance));
         }
 
-
         private static IEnumerator DelayRoutine(GroundItemLabel item)
         {
-            yield return null;
-            if (item == null || !item || item.getItemData() is not { } itemData) yield break;
+            if (item == null) yield break;
+            var itemData = item.getItemData();
+            if (itemData == null || itemData.affixes == null || item.itemText == null) yield break;
             TextMeshProUGUI tmp = item.itemText;
-            if (!tmp) yield break;
-
-            bool isKG = ShowAffixOnLabel.Value is (DisplayAffixType_GroundLabel.Letter_With_Tier or DisplayAffixType_GroundLabel.Letter_Without_Tier or DisplayAffixType_GroundLabel.Without_Tier or DisplayAffixType_GroundLabel.With_Tier);
-            bool isDD = ShowAffixOnLabel.Value is (DisplayAffixType_GroundLabel.DD_Tier);
+            bool isLetter = ShowAffixOnLabel.Value is DisplayAffixType_GroundLabel.Ontier or DisplayAffixType_GroundLabel.Letter_With_Tier or DisplayAffixType_GroundLabel.Letter_Without_Tier or DisplayAffixType_GroundLabel.Without_Tier or DisplayAffixType_GroundLabel.With_Tier;
             string itemName = itemData.FullName;
             {
                 if (itemData.isUniqueSetOrLegendary() && itemData.affixes.Count == 0)
@@ -41,142 +33,157 @@ public class Experimental
                         itemName += $" <color=#00FF00>[LP: {itemData.legendaryPotential}]</color>";
                 }
                 tmp.text = "";
-                tmp.text = item.emphasized ? itemName.ToUpper() : itemName;
+                tmp.text = itemName;
             }
 
-            if (itemData.affixes.Count > 0)
+
+            if (itemData.affixes != null && itemData.affixes.Count > 0)
             {
+                StringBuilder prefixBuilder = new();
+                StringBuilder suffixBuilder = new();
+                StringBuilder SealedBuilder = new();
+                StringBuilder NopsBuilder = new();
+                int prefixIndex = 0;
+                int suffixIndex = 0;
+                int NopsIndex = 0;
 
-                if (isKG)
+                foreach (ItemAffix affix in itemData.affixes)
                 {
-                    itemName += " [";
+                    string affixEntry = getAffixOnLabelEntry(affix, itemData);
 
-                    foreach (ItemAffix affix in itemData.affixes)
-                    {
-                        double roll = Math.Round(affix.getRollFloat() * 100.0, 1);
-                        int tier = affix.DisplayTier;
-                        string rollColor = AffixRolls.GetItemRollRarityColor(roll);
-                        string tierColor = AffixRolls.GetItemTierColor(tier);
-                        string letter = AffixRolls.GetItemRollRarityLetter(roll);
-                        string letterColor = AffixRolls.GetItemRollRarityColorLetter(roll);
-                        string letterTier = tier > 0 ? $"<color={tierColor}>{tier}</color>" : "";
-                        itemName += ShowAffixOnLabel.Value switch
-                        {
-                            DisplayAffixType_GroundLabel.With_Tier => $" [<color={tierColor}>T{tier}</color> <color={rollColor}>{roll}%</color>]",
-                            DisplayAffixType_GroundLabel.Without_Tier => $" [<color={rollColor}>{roll}%</color>]",
-                            DisplayAffixType_GroundLabel.Letter_With_Tier => $" {letterTier}<color={letterColor}>{letter}</color>",
-                            DisplayAffixType_GroundLabel.Letter_Without_Tier => $" <color={letterColor}>{letter}</color>",
-                            _ => ""
-
-                        };
-                    }
-                    itemName += " ]";
-                    tmp.text = "";
-                    tmp.text = item.emphasized ? itemName.ToUpper() : itemName;
-                }
-
-
-
-
-                if (isDD)
-                {
-                    List<string> prefixes = new();
-                    List<string> suffixes = new();
-                    List<string> SealedAffixes = new();
-                    foreach (ItemAffix affix in itemData.affixes)
+                    if (isLetter && ShowAffixPSOnLabel.Value)
                     {
                         if (affix.affixType == AffixList.AffixType.PREFIX)
                         {
                             if (affix.isSealedAffix)
                             {
-                                SealedAffixes.Add($"T{affix.DisplayTier}");
+                                SealedBuilder.Append(affixEntry);
                             }
                             else if (!affix.isSealedAffix && affix.specialAffixType == AffixList.SpecialAffixType.Experimental)
                             {
-                                int prefixIndex = prefixes.Count + 1;
-                                string experimentalAffix = $"<color=#00FF00>•T{affix.DisplayTier}</color>";
-                                if (prefixIndex == 1)
-                                {
-                                    experimentalAffix = $"{experimentalAffix}";
-                                }
-                                else if (prefixIndex == 2)
-                                {
-                                    experimentalAffix = $"{experimentalAffix}";
-                                }
-                                affix.affixName = experimentalAffix;
-                                prefixes.Add(affix.affixName);
+                                if (prefixIndex > 0)
+                                    prefixBuilder.Append(' ');
+                                prefixBuilder.Append($"<color=#FFFFFF>•</color>{affixEntry}");
+                                prefixIndex++;
                             }
                             else
                             {
-                                prefixes.Add($"T{affix.DisplayTier}");
+                                if (prefixIndex > 0)
+                                    prefixBuilder.Append(' ');
+                                prefixBuilder.Append(affixEntry);
+                                prefixIndex++;
                             }
                         }
                         else if (affix.affixType == AffixList.AffixType.SUFFIX)
                         {
                             if (affix.isSealedAffix)
                             {
-                                SealedAffixes.Add($"T{affix.DisplayTier}");
+                                SealedBuilder.Append(affixEntry);
                             }
                             else if (!affix.isSealedAffix && affix.specialAffixType == AffixList.SpecialAffixType.Experimental)
                             {
-                                int suffixIndex = suffixes.Count + 1;
-                                string experimentalAffix = $"<color=#00FF00>•T{affix.DisplayTier}</color>";
-                                if (suffixIndex == 1)
-                                {
-                                    experimentalAffix = $"{experimentalAffix}";
-                                }
-                                else if (suffixIndex == 2)
-                                {
-                                    experimentalAffix = $"{experimentalAffix}";
-                                }
-                                affix.affixName = experimentalAffix;
-                                suffixes.Add(affix.affixName);
+                                if (suffixIndex > 0)
+                                    suffixBuilder.Append(' ');
+                                suffixBuilder.Append($"<color=#FFFFFF>•</color>{affixEntry}");
+                                suffixIndex++;
                             }
                             else
                             {
-                                suffixes.Add($"T{affix.DisplayTier}");
+                                if (suffixIndex > 0)
+                                    suffixBuilder.Append(' ');
+                                suffixBuilder.Append(affixEntry);
+                                suffixIndex++;
                             }
                         }
                     }
-
-                    string prefix = string.Join(" ", prefixes);
-                    string suffix = string.Join(" ", suffixes);
-                    string sealedAffix = string.Join(" ", SealedAffixes);
-
-                    bool hasPrefix = prefixes.Count > 0;
-                    bool hasSuffix = suffixes.Count > 0;
-                    bool hasSealedAffix = SealedAffixes.Count > 0;
-
-                    string finalItemName;
-                    if (hasPrefix && hasSuffix && hasSealedAffix)
-                    {
-                        finalItemName = $"[{prefix}] {itemName} [{suffix}] <color=#FF0000>•[{sealedAffix}]</color>";
-                    }
-                    else if (hasPrefix && hasSuffix)
-                    {
-                        finalItemName = $"[{prefix}] {itemName} [{suffix}]";
-                    }
-                    else if (hasPrefix)
-                    {
-                        finalItemName = $"[{prefix}] {itemName}";
-                    }
-                    else if (hasSuffix)
-                    {
-                        finalItemName = $"{itemName} [{suffix}]";
-                    }
-                    else if (hasSealedAffix)
-                    {
-                        finalItemName = $"{itemName} <color=#FF0000>•[{sealedAffix}]</color>";
-                    }
                     else
                     {
-                        finalItemName = itemName;
+                        if (affix.isSealedAffix)
+                        {
+                            SealedBuilder.Append(affixEntry);
+                        }
+                        else if (!affix.isSealedAffix && affix.specialAffixType == AffixList.SpecialAffixType.Experimental)
+                        {
+                            if (NopsIndex > 0)
+                                NopsBuilder.Append(' ');
+                            NopsBuilder.Append($"<color=#FFFFFF>•</color>{affixEntry}");
+                            NopsIndex++;
+                        }
+                        else
+                        {
+                            if (NopsIndex > 0)
+                                NopsBuilder.Append(' ');
+                            NopsBuilder.Append(affixEntry);
+                            NopsIndex++;
+                        }
                     }
-                    tmp.text = "";
-                    tmp.text = item.emphasized ? finalItemName.ToUpper() : finalItemName;
                 }
 
+                string finalPrefixes = prefixBuilder.Length > 0 ? $"[{prefixBuilder}]" : ""; // 前
+                string finalSuffixes = suffixBuilder.Length > 0 ? $"[{suffixBuilder}]" : ""; // 后
+                string finalSealed = SealedBuilder.Length > 0 ? $"<color=red>[•{SealedBuilder}]</color>" : ""; // 封印
+                string finalNops = NopsBuilder.Length > 0 ? $"[{NopsBuilder}]" : ""; // 不区分格式
+                string finalItemName = $"{finalPrefixes} {itemName} {finalSuffixes} {finalNops} {finalSealed}";
+                tmp.text = "";
+                tmp.text = item.emphasized ? $"<u>{finalItemName}</u>" : finalItemName;
             }
+
+
+
+
+            static string getAffixOnLabelEntry(ItemAffix affix, ItemDataUnpacked itemData)
+            {
+                if (itemData == null || affix == null) return "?";
+
+                int tier = affix.DisplayTier;
+
+                double trueRoll = Affixfix.GetAffixTrueRoll(itemData, affix);
+
+                float true_roll_value = (float)(trueRoll / 100);
+
+                return getAffixOnLabel(tier, true_roll_value);
+
+            }
+
+            static string getAffixOnLabel(int tier, double true_roll_value)
+            {
+
+                string tierColor = AffixRolls.GetItemTierColor_Style2(tier);
+                string Tierclass = tier > 0 ? $"<color={tierColor}>{tier}</color>" : "";
+                double rollValue = Math.Round(true_roll_value * 100.0, 1);
+                string rollValueColor = AffixRolls.GetItemRollRarityColor_Style2(rollValue);
+
+                double style2_roll_value = Math.Round(true_roll_value * 100.0, 1);
+                string style2_roll_string = "" + style2_roll_value + "%";
+
+                string style3_roll_value = AffixRolls.GetItemRollRarity_Style3(rollValue, false);
+                string style3_roll_Color = AffixRolls.GetItemRollRarityColor_Style3(rollValue);
+
+
+
+                if (true_roll_value > 1)
+                {
+                    style2_roll_string = " -";
+                }
+                else if (true_roll_value < 0)
+                {
+                    style2_roll_string = "";
+                }
+                return ShowAffixOnLabel.Value switch
+                {
+                    DisplayAffixType_GroundLabel.Ontier => $"<color={tierColor}>T{tier}</color>",
+                    DisplayAffixType_GroundLabel.With_Tier => $"<color={tierColor}>T{tier}</color>(<color={rollValueColor}>{style2_roll_string}</color>)",
+                    DisplayAffixType_GroundLabel.Without_Tier => $"<color={rollValueColor}>{style2_roll_string}</color>",
+                    DisplayAffixType_GroundLabel.Letter_With_Tier => $"{Tierclass}<color={style3_roll_Color}>{style3_roll_value}</color>",
+                    DisplayAffixType_GroundLabel.Letter_Without_Tier => $"<color={style3_roll_Color}>{style3_roll_value}</color>",
+
+
+
+
+                    _ => ""
+                };
+            }
+
         }
     }
 }

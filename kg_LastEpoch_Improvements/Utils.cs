@@ -1,26 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel;
 using System.Reflection;
-using HarmonyLib;
-using Il2Cpp;
 using Il2CppLE.UI.Controls;
 using Il2CppTMPro;
 using MelonLoader;
-using UnityEngine;
 using UnityEngine.Localization.Components;
-using UnityEngine.UI;
 using AccessTools = HarmonyLib.AccessTools;
 
 namespace kg_LastEpoch_Improvements;
 
 public static class Utils
 {
+    public static string GetDescription(this Enum value)
+    {
+        FieldInfo field = value.GetType().GetField(value.ToString());
+        return Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) is not DescriptionAttribute attribute ? value.ToString() : attribute.Description;
+    }
+
     //idk why but for some weird reason IL2CPP libs doesn't allow me to use indexer in List<>. So this is a reflection workaround
     private static readonly Dictionary<Type, MethodInfo> _cachedMethods = new Dictionary<Type, MethodInfo>();
-    public static T get<T>(this Il2CppSystem.Collections.Generic.List<T> list, int index)
+    public static T Get<T>(this Il2CppSystem.Collections.Generic.List<T> list, int index)
     {
         Type type = typeof(T);
-        if (_cachedMethods.TryGetValue(type, out MethodInfo method)) return (T)method.Invoke(list, new object[] { index }); 
+        if (_cachedMethods.TryGetValue(type, out MethodInfo method)) return (T)method.Invoke(list, new object[] { index });
         method = AccessTools.Method(typeof(Il2CppSystem.Collections.Generic.List<T>), "get_Item", new[] { typeof(int) });
         _cachedMethods[type] = method;
         return (T)method.Invoke(list, new object[] { index });
@@ -73,17 +74,20 @@ public static class Utils
         UnityEngine.Object.DestroyImmediate(newDropdown.GetComponent<LootFilterSettingsPanelUI>());
         newDropdown.name = Name;
         newDropdown.SetSiblingIndex(orderIndex + 1);
-        
+
         newDropdown.GetChild(0).GetComponent<TMP_Text>().text = Name;
         UnityEngine.Object.DestroyImmediate(newDropdown.GetChild(0).GetComponent<LocalizeStringEvent>());
         newDropdown.GetChild(1).GetComponent<TMP_Text>().text = Description;
         UnityEngine.Object.DestroyImmediate(newDropdown.GetChild(1).GetComponent<LocalizeStringEvent>());
-        
+
         ColoredIconDropdown dropdown = newDropdown.GetChild(3).GetComponent<ColoredIconDropdown>();
         dropdown.onValueChanged.RemoveAllListeners();
-        dropdown.ClearOptions(); 
+        dropdown.ClearOptions();
         Il2CppSystem.Collections.Generic.List<string> options = new();
-        foreach (string enumName in Enum.GetNames(typeof(T))) options.Add(enumName.Replace("_"," "));
+                foreach (T enumValue in Enum.GetValues(typeof(T)))
+        {
+            options.Add(enumValue.GetDescription().Replace("_", " "));
+        }
         dropdown.AddOptions(options);
         dropdown.value = (int)(object)option.Value;
         dropdown.onValueChanged.AddListener(a);

@@ -6,3 +6,4 @@ global using UnityEngine.UI;
 global using System;
 global using System.Collections;
 global using Il2Cpp;
+global using LE = Il2CppLE;
