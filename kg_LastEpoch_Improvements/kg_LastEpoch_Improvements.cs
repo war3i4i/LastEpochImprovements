@@ -6,7 +6,7 @@ using Il2CppTMPro;
 using MelonLoader;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.5", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.6", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
 
 namespace kg_LastEpoch_Improvements;
 
@@ -123,17 +123,11 @@ public class kg_LastEpoch_Improvements : MelonMod
         private static void Postfix(ItemDataUnpacked item, int implicitNumber, ref string __result, bool isComparsionItem)
         {
             if (item == null || AffixShowRoll.Value is DisplayAffixType.None || item.isSet()) return;
-            ItemDataUnpacked itemToUse = item;
-            if (isComparsionItem)
-            {
-                if (TooltipItemManager.instance.equipedItem == null) return;
-                itemToUse = TooltipItemManager.instance.equipedItem;
-            }
             __result = AffixShowRoll.Value switch
             {
-                DisplayAffixType.Old_Style => __result.Style1_Implicit(itemToUse, implicitNumber),
-                DisplayAffixType.New_Style => __result.Style2_Implicit(itemToUse, implicitNumber),
-                DisplayAffixType.Letter_Style => __result.Letter_Style_Implicit(itemToUse, implicitNumber),
+                DisplayAffixType.Old_Style => __result.Style1_Implicit(item, implicitNumber),
+                DisplayAffixType.New_Style => __result.Style2_Implicit(item, implicitNumber),
+                DisplayAffixType.Letter_Style => __result.Letter_Style_Implicit(item, implicitNumber),
                 _ => __result
             }; 
         }
@@ -239,14 +233,14 @@ public class kg_LastEpoch_Improvements : MelonMod
         private void PointerEnter()
         {
             if (_label != null && _label && _label.tooltipItem) _label.tooltipItem.OnPointerEnter(null);
-        }
+        } 
 
         private void PointerExit()
         {
             if (_label != null && _label && _label.tooltipItem) _label.tooltipItem.OnPointerExit(null);
-        }
+        } 
 
-        private void FixedUpdate()
+        private void FixedUpdate() 
         {
             if (!_trackable || !_trackable.activeSelf)
             {
