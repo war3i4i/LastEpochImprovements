@@ -61,7 +61,7 @@ public static class Utils
         newButton.GetChild(0).GetComponent<Toggle>().isOn = option.Value;
         newButton.GetChild(0).GetComponent<Toggle>().onValueChanged.AddListener(a);
         UnityEngine.Object.DestroyImmediate(newButton.GetChild(1).GetChild(0).GetComponent<LocalizeStringEvent>());
-        newButton.GetChild(1).GetChild(0).GetComponent<TMP_Text>().text = Name;
+        newButton.GetChild(1).GetChild(0).GetComponent<TMP_Text>().text = Name; 
     }
     public static void CreateNewOption_EnumDropdown<T>(this SettingsPanelTabNavigable settings, string Category, string Name, string Description, MelonPreferences_Entry<T> option, Action<int> a) where T : Enum
     {
@@ -78,14 +78,13 @@ public static class Utils
         UnityEngine.Object.DestroyImmediate(newDropdown.GetChild(0).GetComponent<LocalizeStringEvent>());
         newDropdown.GetChild(1).GetComponent<TMP_Text>().text = Description;
         UnityEngine.Object.DestroyImmediate(newDropdown.GetChild(1).GetComponent<LocalizeStringEvent>());
-        
         ColoredIconDropdown dropdown = newDropdown.GetChild(3).GetComponent<ColoredIconDropdown>();
         dropdown.onValueChanged.RemoveAllListeners();
-        dropdown.ClearOptions(); 
+        dropdown.ClearOptions();
         Il2CppSystem.Collections.Generic.List<string> options = new();
         foreach (string enumName in Enum.GetNames(typeof(T))) options.Add(enumName.Replace("_"," "));
         dropdown.AddOptions(options);
         dropdown.value = (int)(object)option.Value;
-        dropdown.onValueChanged.AddListener(a);
+        dropdown.onValueChanged.AddListener(new Action<int>(_ => a(dropdown.value)));
     }
 }

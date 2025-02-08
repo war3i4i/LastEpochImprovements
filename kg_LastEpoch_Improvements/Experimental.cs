@@ -26,6 +26,7 @@ public class Experimental
 
         private static bool CheckFilter(ItemDataUnpacked item)
         {
+            if (item.rarity == 9) return true;
             if (ItemFilterManager.Instance.Filter == null) return false;
             foreach (Rule rule in ItemFilterManager.Instance.Filter.rules)
             {
@@ -35,11 +36,19 @@ public class Experimental
             }
             return false;
         }
-
+ 
         private static IEnumerator DelayRoutine(GroundItemLabel item)
         {
             yield return null;
-            if (item == null || !item || item.getItemData() is not { } itemData) yield break;
+            ItemDataUnpacked itemData = null;
+            try
+            {
+                if (item == null || !item) yield break;
+                itemData = item.getItemData();
+                if (itemData == null) yield break;
+            }
+            catch { yield break; }
+
             TextMeshProUGUI tmp = item.itemText;
             if (!tmp) yield break;
 
@@ -79,12 +88,12 @@ public class Experimental
                         _ => ""
                     };
                 }
-
                 if (isLetter) itemName += " ]";
             }
 
             tmp.text = "";
             tmp.text = item.emphasized ? itemName.ToUpper() : itemName;
+            item.sceneFollower?.calculateDimensions();
         }
     }
 }

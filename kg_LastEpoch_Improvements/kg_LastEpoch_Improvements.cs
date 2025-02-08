@@ -1,22 +1,28 @@
-﻿using Il2CppDMM;
+﻿#define CHEATVERSION
+using Il2CppDMM;
+using Il2CppInterop.Common;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppItemFiltering;
+using Il2CppLE.Telemetry;
 using Il2CppLE.UI;
+using Il2CppSystem.Net;
 using Il2CppTMPro;
 using MelonLoader;
+using MelonLoader.Utils;
+using UnityEngine.Networking;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.6", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.7", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
 
 namespace kg_LastEpoch_Improvements;
 
 public class kg_LastEpoch_Improvements : MelonMod
 {
-    private static kg_LastEpoch_Improvements _thistype;
-    private static MelonPreferences_Category ImprovementsModCategory;
+    private static kg_LastEpoch_Improvements _thistype; 
+    private static MelonPreferences_Category ImprovementsModCategory; 
     private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll;
-    public static MelonPreferences_Entry<DisplayAffixType_GroundLabel> ShowAffixOnLabel;
+    public static MelonPreferences_Entry<DisplayAffixType_GroundLabel> ShowAffixOnLabel; 
 #if CHEATVERSION 
     private static MelonPreferences_Entry<bool> Cheat_FogOfWar; 
     private static MelonPreferences_Entry<bool> Cheat_EnhancedCamera; 
@@ -27,7 +33,7 @@ public class kg_LastEpoch_Improvements : MelonMod
     private enum DisplayAffixType { None, Old_Style, New_Style, Letter_Style };
     public enum DisplayAffixType_GroundLabel { None, Without_Tier, Without_Tier_Filter_Only, With_Tier, With_Tier_Filter_Only, Letter_Without_Tier, Letter_Without_Tier_Filter_Only, Letter_With_Tier, Letter_With_Tier_Filter_Only }
 
-    private static void CreateCustomMapIcon() 
+    private void CreateCustomMapIcon()
     {
         ClassInjector.RegisterTypeInIl2Cpp<CustomIconProcessor>();
         CustomMapIcon = new GameObject("kg_CustomMapIcon") { hideFlags = HideFlags.HideAndDontSave };
@@ -56,7 +62,68 @@ public class kg_LastEpoch_Improvements : MelonMod
         outline.effectColor = Color.black;
         CustomMapIcon.AddComponent<CustomIconProcessor>();
     }
+    
+    private static Dictionary<string, AudioSource> CustomDropSounds = new();
+    private static AudioSource CreateAudioSource(AudioClip clip)
+    {
+        GameObject audioSource = new GameObject("kg_AudioSource") { hideFlags = HideFlags.HideAndDontSave };
+        AudioSource source = audioSource.AddComponent<AudioSource>();
+        source.reverbZoneMix = 0;
+        source.spatialBlend = 0;
+        source.bypassListenerEffects = true;
+        source.bypassEffects = true;
+        source.volume = 1f;
+        source.clip = clip;
+        return source;
+    }
 
+    private void LoadSounds()
+    {
+        string AudioFilesPath = Path.Combine(MelonEnvironment.UserDataDirectory, "CustomDropSounds");
+        if (!Directory.Exists(AudioFilesPath)) Directory.CreateDirectory(AudioFilesPath);
+        MelonCoroutines.Start(LoadCustomDropSounds(AudioFilesPath));
+    }
+
+    private static IEnumerator LoadCustomDropSounds(string path)
+    {
+        if (CustomDropSounds.Count > 0)
+        {
+            foreach (KeyValuePair<string, AudioSource> kvp in CustomDropSounds)
+                Object.Destroy(kvp.Value.gameObject);
+            CustomDropSounds.Clear();
+        }
+        string[] files = Directory.GetFiles(path, "*.mp3", SearchOption.AllDirectories)
+            .Concat(Directory.GetFiles(path, "*.wav", SearchOption.AllDirectories))
+            .Concat(Directory.GetFiles(path, "*.ogg", SearchOption.AllDirectories)).ToArray();
+        for(int i = 0; i < files.Length; i++)
+        {
+            UnityWebRequest www = UnityWebRequest.Get($"file://{files[i]}");
+            yield return www.SendWebRequest();
+            if (www.isNetworkError || www.isHttpError) continue;
+            AudioClip clip = WebRequestWWW.InternalCreateAudioClipUsingDH(www.downloadHandler, www.url, false, true, AudioType.UNKNOWN);
+            if (clip)
+            {
+                clip.name = Path.GetFileNameWithoutExtension(files[i]);
+                string fNameNoExt = Path.GetFileNameWithoutExtension(files[i]);
+                CustomDropSounds[fNameNoExt] = CreateAudioSource(clip);
+            }
+        }
+        MelonLogger.Msg($"Loaded {CustomDropSounds.Count} custom drop sounds");
+    }
+
+    private static bool TryPlaySoundDelayed(string name, float delay, float volume)
+    {
+        if (CustomDropSounds.Count == 0 || !CustomDropSounds.ContainsKey(name)) return false;
+        MelonCoroutines.Start(DelaySound(CustomDropSounds[name], delay, volume));
+        return true;
+    }
+
+    private static IEnumerator DelaySound(AudioSource source, float delay, float volume)
+    {
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+        source.PlayOneShot(source.clip, volume);
+    }
+    
     public override void OnInitializeMelon()
     {
         _thistype = this;
@@ -71,6 +138,7 @@ public class kg_LastEpoch_Improvements : MelonMod
 #endif
         ImprovementsModCategory.SetFilePath("UserData/kg_LastEpoch_Improvements.cfg", autoload: true);
         CreateCustomMapIcon();
+        LoadSounds();
     }
 
     private static Color GetColorForItemRarity(ItemDataUnpacked item)
@@ -150,7 +218,7 @@ public class kg_LastEpoch_Improvements : MelonMod
     }
 
     [HarmonyPatch(typeof(GroundItemVisuals), nameof(GroundItemVisuals.initialise), typeof(ItemDataUnpacked), typeof(uint), typeof(GroundItemLabel), typeof(GroundItemRarityVisuals), typeof(bool))]
-    private static class GroundItemVisuals_initialise_Patch2
+    private static class GroundItemVisuals_initialise_Patch
     {
         private static bool ShouldShow(Rule rule)
         {
@@ -159,15 +227,41 @@ public class kg_LastEpoch_Improvements : MelonMod
             return rule.emphasized;
         }
 
-        private static void Postfix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label)
+        private static bool RuleHasCustomSound(Rule rule, out string sName)
+        {
+            sName = null;
+            try
+            {
+                if (rule == null) return false;
+                string rName = rule.nameOverride.ToLower();
+                if (string.IsNullOrWhiteSpace(rName)) return false;
+                if (rName.Contains("sound:"))
+                {
+                    sName = rName.Substring(rName.IndexOf("sound:", StringComparison.Ordinal) + 6).Split(' ')[0];
+                    return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        private static void Prefix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label, GroundItemRarityVisuals groundItemRarityVisuals)
         {
             ItemFilter filter = ItemFilterManager.Instance.Filter;
             if (filter == null) return;
             foreach (Rule rule in filter.rules)
             {
                 if (!ShouldShow(rule)) continue;
-                if (rule.Match(itemData))
+                 
+                if (rule.Match(itemData) || itemData.rarity == 9) 
                 {
+                    if (RuleHasCustomSound(rule, out string sName))
+                    {
+                        PlayOneShotSound oneShotComp = groundItemRarityVisuals?.GetComponent<PlayOneShotSound>();
+                        bool customSound = TryPlaySoundDelayed(sName, oneShotComp?.delayDuration ?? 0f, 1f);
+                        if (oneShotComp && customSound) oneShotComp.StopAllCoroutines();
+                    }
+                    
                     GameObject customMapIcon = Object.Instantiate(CustomMapIcon, DMMap.Instance.iconContainer.transform);
                     customMapIcon.SetActive(true);
                     customMapIcon.GetComponent<CustomIconProcessor>().Init(__instance.gameObject, label);
@@ -283,13 +377,13 @@ public class kg_LastEpoch_Improvements : MelonMod
             {
                 Cheat_FogOfWar.Value = tf;
                 ImprovementsModCategory.SaveToFile();
-            });
+            }); 
             __instance.CreateNewOption(CategoryName, "<color=green>[Cheat] Enhanced camera</color>", Cheat_EnhancedCamera, (tf) =>
             {
                 Cheat_EnhancedCamera.Value = tf;
                 ImprovementsModCategory.SaveToFile(); 
                 CameraManager_Start_Patch.Switch();
-            });
+            }); 
 #endif
             __instance.CreateNewOption_EnumDropdown(CategoryName, "<color=green>Affix Show Roll (Tooltip)</color>", "Show affix roll on tooltip text", AffixShowRoll, (i) =>
             {
