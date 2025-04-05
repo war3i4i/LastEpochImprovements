@@ -63,6 +63,7 @@ public static class Utils
         UnityEngine.Object.DestroyImmediate(newButton.GetChild(1).GetChild(0).GetComponent<LocalizeStringEvent>());
         newButton.GetChild(1).GetChild(0).GetComponent<TMP_Text>().text = Name; 
     }
+    public static GameObject CopyFrom_Dropdown;
     public static void CreateNewOption_EnumDropdown<T>(this SettingsPanelTabNavigable settings, string Category, string Name, string Description, MelonPreferences_Entry<T> option, Action<int> a) where T : Enum
     {
         Transform optionsTransform = settings.transform.GetChild(0).GetChild(0).Find("Dropdown - Language Selection");
@@ -78,10 +79,16 @@ public static class Utils
         UnityEngine.Object.DestroyImmediate(newDropdown.GetChild(0).GetComponent<LocalizeStringEvent>());
         newDropdown.GetChild(1).GetComponent<TMP_Text>().text = Description;
         UnityEngine.Object.DestroyImmediate(newDropdown.GetChild(1).GetComponent<LocalizeStringEvent>());
+        if (!CopyFrom_Dropdown)
+        {
+            GameObject _disabled = new GameObject("disabled.copydropdown") { hideFlags = HideFlags.HideAndDontSave };
+            _disabled.SetActive(false);
+            CopyFrom_Dropdown = UnityEngine.Object.Instantiate(newDropdown.gameObject, _disabled.transform);
+        }
         ColoredIconDropdown dropdown = newDropdown.GetChild(3).GetComponent<ColoredIconDropdown>();
         dropdown.onValueChanged.RemoveAllListeners();
         dropdown.ClearOptions();
-        Il2CppSystem.Collections.Generic.List<string> options = new();
+        Il2CppSystem.Collections.Generic.List<string> options  = new();
         foreach (string enumName in Enum.GetNames(typeof(T))) options.Add(enumName.Replace("_"," "));
         dropdown.AddOptions(options);
         dropdown.value = (int)(object)option.Value;

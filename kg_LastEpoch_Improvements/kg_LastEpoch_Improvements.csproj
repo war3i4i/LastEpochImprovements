@@ -6,6 +6,7 @@
         <Nullable>disable</Nullable>
         <Configurations>Debug;Release;CheatVersion</Configurations>
         <Platforms>AnyCPU</Platforms>
+        <LangVersion>latest</LangVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -26,6 +27,9 @@
     <ItemGroup>
       <Reference Include="0Harmony">
         <HintPath>Libs\0Harmony.dll</HintPath>
+      </Reference>
+      <Reference Include="fastJSON">
+        <HintPath>Libs\fastJSON.dll</HintPath>
       </Reference>
       <Reference Include="Il2CppInterop.Common">
         <HintPath>Libs\Il2CppInterop.Common.dll</HintPath>
@@ -79,7 +83,14 @@
         <HintPath>Libs\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
       </Reference>
     </ItemGroup>
-    <Target Name="Copy" AfterTargets="Build">
+
+    <ItemGroup>
+      <PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.40">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+    <Target Name="Copy" AfterTargets="ILRepack">
         <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;C:\Program Files (x86)\Steam\steamapps\common\Last Epoch\Mods\$(AssemblyName).dll&quot;" />
     </Target>
 

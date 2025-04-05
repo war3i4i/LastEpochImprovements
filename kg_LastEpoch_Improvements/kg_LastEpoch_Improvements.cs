@@ -32,7 +32,6 @@ public class kg_LastEpoch_Improvements : MelonMod
 
     private enum DisplayAffixType { None, Old_Style, New_Style, Letter_Style };
     public enum DisplayAffixType_GroundLabel { None, Without_Tier, Without_Tier_Filter_Only, With_Tier, With_Tier_Filter_Only, Letter_Without_Tier, Letter_Without_Tier_Filter_Only, Letter_With_Tier, Letter_With_Tier_Filter_Only }
-
     private void CreateCustomMapIcon()
     {
         ClassInjector.RegisterTypeInIl2Cpp<CustomIconProcessor>();
@@ -62,71 +61,12 @@ public class kg_LastEpoch_Improvements : MelonMod
         outline.effectColor = Color.black;
         CustomMapIcon.AddComponent<CustomIconProcessor>();
     }
-    
-    private static Dictionary<string, AudioSource> CustomDropSounds = new();
-    private static AudioSource CreateAudioSource(AudioClip clip)
-    {
-        GameObject audioSource = new GameObject("kg_AudioSource") { hideFlags = HideFlags.HideAndDontSave };
-        AudioSource source = audioSource.AddComponent<AudioSource>();
-        source.reverbZoneMix = 0;
-        source.spatialBlend = 0;
-        source.bypassListenerEffects = true;
-        source.bypassEffects = true;
-        source.volume = 1f;
-        source.clip = clip;
-        return source;
-    }
 
-    private void LoadSounds()
-    {
-        string AudioFilesPath = Path.Combine(MelonEnvironment.UserDataDirectory, "CustomDropSounds");
-        if (!Directory.Exists(AudioFilesPath)) Directory.CreateDirectory(AudioFilesPath);
-        MelonCoroutines.Start(LoadCustomDropSounds(AudioFilesPath));
-    }
-
-    private static IEnumerator LoadCustomDropSounds(string path)
-    {
-        if (CustomDropSounds.Count > 0)
-        {
-            foreach (KeyValuePair<string, AudioSource> kvp in CustomDropSounds)
-                Object.Destroy(kvp.Value.gameObject);
-            CustomDropSounds.Clear();
-        }
-        string[] files = Directory.GetFiles(path, "*.mp3", SearchOption.AllDirectories)
-            .Concat(Directory.GetFiles(path, "*.wav", SearchOption.AllDirectories))
-            .Concat(Directory.GetFiles(path, "*.ogg", SearchOption.AllDirectories)).ToArray();
-        for(int i = 0; i < files.Length; i++)
-        {
-            UnityWebRequest www = UnityWebRequest.Get($"file://{files[i]}");
-            yield return www.SendWebRequest();
-            if (www.isNetworkError || www.isHttpError) continue;
-            AudioClip clip = WebRequestWWW.InternalCreateAudioClipUsingDH(www.downloadHandler, www.url, false, true, AudioType.UNKNOWN);
-            if (clip)
-            {
-                clip.name = Path.GetFileNameWithoutExtension(files[i]);
-                string fNameNoExt = Path.GetFileNameWithoutExtension(files[i]);
-                CustomDropSounds[fNameNoExt] = CreateAudioSource(clip);
-            }
-        }
-        MelonLogger.Msg($"Loaded {CustomDropSounds.Count} custom drop sounds");
-    }
-
-    private static bool TryPlaySoundDelayed(string name, float delay, float volume)
-    {
-        if (CustomDropSounds.Count == 0 || !CustomDropSounds.ContainsKey(name)) return false;
-        MelonCoroutines.Start(DelaySound(CustomDropSounds[name], delay, volume));
-        return true;
-    }
-
-    private static IEnumerator DelaySound(AudioSource source, float delay, float volume)
-    {
-        if (delay > 0f) yield return new WaitForSeconds(delay);
-        source.PlayOneShot(source.clip, volume);
-    }
+   
     
     public override void OnInitializeMelon()
-    {
-        _thistype = this;
+    { 
+        _thistype = this; 
         ImprovementsModCategory = MelonPreferences.CreateCategory("kg_Improvements");
         ShowAll = ImprovementsModCategory.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
         AffixShowRoll = ImprovementsModCategory.CreateEntry("Show Affix Roll New", DisplayAffixType.None, "Show Affix Roll New", "Show each affix roll on item");
@@ -138,7 +78,7 @@ public class kg_LastEpoch_Improvements : MelonMod
 #endif
         ImprovementsModCategory.SetFilePath("UserData/kg_LastEpoch_Improvements.cfg", autoload: true);
         CreateCustomMapIcon();
-        LoadSounds();
+        SelectSound.Load();
     }
 
     private static Color GetColorForItemRarity(ItemDataUnpacked item)
@@ -227,24 +167,6 @@ public class kg_LastEpoch_Improvements : MelonMod
             return rule.emphasized;
         }
 
-        private static bool RuleHasCustomSound(Rule rule, out string sName)
-        {
-            sName = null;
-            try
-            {
-                if (rule == null) return false;
-                string rName = rule.nameOverride.ToLower();
-                if (string.IsNullOrWhiteSpace(rName)) return false;
-                if (rName.Contains("sound:"))
-                {
-                    sName = rName.Substring(rName.IndexOf("sound:", StringComparison.Ordinal) + 6).Split(' ')[0];
-                    return true;
-                }
-            }
-            catch { }
-            return false;
-        }
-
         private static void Prefix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label, GroundItemRarityVisuals groundItemRarityVisuals)
         {
             ItemFilter filter = ItemFilterManager.Instance.Filter;
@@ -255,10 +177,10 @@ public class kg_LastEpoch_Improvements : MelonMod
                  
                 if (rule.Match(itemData) || itemData.rarity == 9) 
                 {
-                    if (RuleHasCustomSound(rule, out string sName))
+                    if (SelectSound.RuleHasCustomSound(rule, out string sName))
                     {
                         PlayOneShotSound oneShotComp = groundItemRarityVisuals?.GetComponent<PlayOneShotSound>();
-                        bool customSound = TryPlaySoundDelayed(sName, oneShotComp?.delayDuration ?? 0f, 1f);
+                        bool customSound = SelectSound.TryPlaySoundDelayed(sName, oneShotComp?.delayDuration ?? 0f, 1f);
                         if (oneShotComp && customSound) oneShotComp.StopAllCoroutines();
                     }
                     
@@ -365,7 +287,7 @@ public class kg_LastEpoch_Improvements : MelonMod
             }
         }
     } 
-
+    
     [HarmonyPatch(typeof(SettingsPanelTabNavigable), nameof(SettingsPanelTabNavigable.Awake))]
     private static class SettingsPanelTabNavigable_Awake_Patch
     {
