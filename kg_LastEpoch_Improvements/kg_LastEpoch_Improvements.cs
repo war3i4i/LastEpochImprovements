@@ -1,4 +1,4 @@
-﻿#define CHEATVERSION
+﻿#define FOGCAMERAVERSION 
 using Il2CppDMM;
 using Il2CppInterop.Common;
 using Il2CppInterop.Runtime.Injection;
@@ -23,9 +23,9 @@ public class kg_LastEpoch_Improvements : MelonMod
     private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll;
     public static MelonPreferences_Entry<DisplayAffixType_GroundLabel> ShowAffixOnLabel; 
-#if CHEATVERSION 
-    private static MelonPreferences_Entry<bool> Cheat_FogOfWar; 
-    private static MelonPreferences_Entry<bool> Cheat_EnhancedCamera; 
+#if FOGCAMERAVERSION
+    private static MelonPreferences_Entry<bool> FogOfWar; 
+    private static MelonPreferences_Entry<bool> EnhancedCamera; 
 #endif
     private static MelonPreferences_Entry<bool> AutoStoreCraftMaterials;
     private static GameObject CustomMapIcon;
@@ -61,24 +61,22 @@ public class kg_LastEpoch_Improvements : MelonMod
         outline.effectColor = Color.black;
         CustomMapIcon.AddComponent<CustomIconProcessor>();
     }
-
-   
     
     public override void OnInitializeMelon()
     { 
-        _thistype = this; 
+        _thistype = this;
         ImprovementsModCategory = MelonPreferences.CreateCategory("kg_Improvements");
         ShowAll = ImprovementsModCategory.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
         AffixShowRoll = ImprovementsModCategory.CreateEntry("Show Affix Roll New", DisplayAffixType.None, "Show Affix Roll New", "Show each affix roll on item");
         ShowAffixOnLabel = ImprovementsModCategory.CreateEntry("Show Affix On Label", DisplayAffixType_GroundLabel.None, "Show Affix On Label Type", "Show each affix roll on item label (ground)");
         AutoStoreCraftMaterials = ImprovementsModCategory.CreateEntry("AutoStoreCraftMaterials", false, "Auto storage craft materials", "Automatic storage of craft materials from the inventory");
-#if CHEATVERSION
-        Cheat_FogOfWar = ImprovementsModCategory.CreateEntry("Fog fo war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
-        Cheat_EnhancedCamera = ImprovementsModCategory.CreateEntry("Enhanced Camera", false, "Enhanced camera", "Enhanced camera angles and zoom");
+#if FOGCAMERAVERSION
+        FogOfWar = ImprovementsModCategory.CreateEntry("Fog of war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
+        EnhancedCamera = ImprovementsModCategory.CreateEntry("Enhanced Camera", false, "Enhanced camera", "Enhanced camera angles and zoom");
 #endif
         ImprovementsModCategory.SetFilePath("UserData/kg_LastEpoch_Improvements.cfg", autoload: true);
         CreateCustomMapIcon();
-        SelectSound.Load();
+        CustomDropSounds.Load();
     }
 
     private static Color GetColorForItemRarity(ItemDataUnpacked item)
@@ -177,10 +175,10 @@ public class kg_LastEpoch_Improvements : MelonMod
                  
                 if (rule.Match(itemData) || itemData.rarity == 9) 
                 {
-                    if (SelectSound.RuleHasCustomSound(rule, out string sName))
+                    if (CustomDropSounds.RuleHasCustomSound(rule, out string sName))
                     {
                         PlayOneShotSound oneShotComp = groundItemRarityVisuals?.GetComponent<PlayOneShotSound>();
-                        bool customSound = SelectSound.TryPlaySoundDelayed(sName, oneShotComp?.delayDuration ?? 0f, 1f);
+                        bool customSound = CustomDropSounds.TryPlaySoundDelayed(sName, oneShotComp?.delayDuration ?? 0f, 1f);
                         if (oneShotComp && customSound) oneShotComp.StopAllCoroutines();
                     }
                     
@@ -294,17 +292,17 @@ public class kg_LastEpoch_Improvements : MelonMod
         private static void Postfix(SettingsPanelTabNavigable __instance)
         {
             const string CategoryName = "KG Improvements";
-#if CHEATVERSION
-            __instance.CreateNewOption(CategoryName, "<color=green>[Cheat] Clear fog on map on start</color>", Cheat_FogOfWar, (tf) =>
+#if FOGCAMERAVERSION
+            __instance.CreateNewOption_Toggle(CategoryName, "<color=green>Clear fog on map on start</color>", FogOfWar, (tf) =>
             {
-                Cheat_FogOfWar.Value = tf;
+                FogOfWar.Value = tf;
                 ImprovementsModCategory.SaveToFile();
             }); 
-            __instance.CreateNewOption(CategoryName, "<color=green>[Cheat] Enhanced camera</color>", Cheat_EnhancedCamera, (tf) =>
+            __instance.CreateNewOption_Toggle(CategoryName, "<color=green>Enhanced camera</color>", EnhancedCamera, (tf) =>
             {
-                Cheat_EnhancedCamera.Value = tf;
+                EnhancedCamera.Value = tf;
                 ImprovementsModCategory.SaveToFile(); 
-                CameraManager_Start_Patch.Switch();
+                CameraManager_Start_Patch.Switch();  
             }); 
 #endif
             __instance.CreateNewOption_EnumDropdown(CategoryName, "<color=green>Affix Show Roll (Tooltip)</color>", "Show affix roll on tooltip text", AffixShowRoll, (i) =>
@@ -317,12 +315,12 @@ public class kg_LastEpoch_Improvements : MelonMod
                 ShowAffixOnLabel.Value = (DisplayAffixType_GroundLabel)i;
                 ImprovementsModCategory.SaveToFile();
             });
-            __instance.CreateNewOption(CategoryName, "<color=green>Map Filter Show All</color>", ShowAll, (tf) =>
+            __instance.CreateNewOption_Toggle(CategoryName, "<color=green>Map Filter Show All</color>", ShowAll, (tf) =>
             {
                 ShowAll.Value = tf;
                 ImprovementsModCategory.SaveToFile();
             });
-            __instance.CreateNewOption(CategoryName, "<color=green>Auto storage craft materials</color>", AutoStoreCraftMaterials, (ascm) =>
+            __instance.CreateNewOption_Toggle(CategoryName, "<color=green>Auto storage craft materials</color>", AutoStoreCraftMaterials, (ascm) =>
             {
                 AutoStoreCraftMaterials.Value = ascm;
                 ImprovementsModCategory.SaveToFile();
@@ -330,15 +328,15 @@ public class kg_LastEpoch_Improvements : MelonMod
         }
     }
 
-#if CHEATVERSION
+#if FOGCAMERAVERSION
     [HarmonyPatch(typeof(MinimapFogOfWar), nameof(MinimapFogOfWar.Initialize))]
     private static class MinimapFogOfWar_Initialize_Patch
     {
-        private const float cheatDiscovery = 10000f;
+        private const float fullDiscovery = 10000f;
         private static void Prefix(MinimapFogOfWar __instance, out float __state) 
         {
             __state = __instance.discoveryDistance;
-            if (Cheat_FogOfWar.Value) __instance.discoveryDistance = cheatDiscovery;
+            if (FogOfWar.Value) __instance.discoveryDistance = fullDiscovery;
         }
         private static void Postfix(MinimapFogOfWar __instance, float __state) => __instance.discoveryDistance = __state;
     }
@@ -351,18 +349,18 @@ public class kg_LastEpoch_Improvements : MelonMod
         private static float LE_cameraAngleMin;
         private static float LE_zoomMin;
         
-        private const float cheatAngles = 55f;
-        private const float cheatZoomMin = -40f;
+        private const float newAngles = 55f;
+        private const float newZoomMin = -40f;
         
         public static void Switch()
         {
             if (!CameraManager.instance) return;
-            if (Cheat_EnhancedCamera.Value)
+            if (EnhancedCamera.Value)
             {
-                CameraManager.instance.cameraAngleDefault = cheatAngles;
-                CameraManager.instance.cameraAngleMax = cheatAngles;
-                CameraManager.instance.cameraAngleMin = cheatAngles;
-                CameraManager.instance.zoomMin = cheatZoomMin;
+                CameraManager.instance.cameraAngleDefault = newAngles;
+                CameraManager.instance.cameraAngleMax = newAngles;
+                CameraManager.instance.cameraAngleMin = newAngles;
+                CameraManager.instance.zoomMin = newZoomMin;
             }
             else
             {

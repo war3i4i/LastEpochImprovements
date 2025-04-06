@@ -50,16 +50,17 @@ public static class Utils
         newCategory.transform.SetSiblingIndex(headerInterface.GetSiblingIndex());
         return newCategory.GetSiblingIndex();
     }
-    public static void CreateNewOption(this SettingsPanelTabNavigable settings, string Category, string Name, MelonPreferences_Entry<bool> option, Action<bool> a)
+    public static void CreateNewOption_Toggle(this SettingsPanelTabNavigable settings, string Category, string Name, MelonPreferences_Entry<bool> option, Action<bool> a)
     {
         Transform optionsTransform = settings.transform.GetChild(0).GetChild(0).Find("Option - Minion Health Bars");
         if (!optionsTransform) return;
         int orderIndex = CreateCategoryIfNeeded(settings, Category);
         Transform newButton = UnityEngine.Object.Instantiate(optionsTransform, optionsTransform.parent);
         newButton.name = Name;
-        newButton.SetSiblingIndex(orderIndex + 1);
-        newButton.GetChild(0).GetComponent<Toggle>().isOn = option.Value;
-        newButton.GetChild(0).GetComponent<Toggle>().onValueChanged.AddListener(a);
+        newButton.SetSiblingIndex(orderIndex + 1); 
+        Toggle toggle = newButton.GetChild(0).GetComponent<Toggle>();
+        toggle.isOn = option.Value;
+        toggle.onValueChanged.AddListener(new Action<bool>(_ => a(toggle.isOn)));
         UnityEngine.Object.DestroyImmediate(newButton.GetChild(1).GetChild(0).GetComponent<LocalizeStringEvent>());
         newButton.GetChild(1).GetChild(0).GetComponent<TMP_Text>().text = Name; 
     }

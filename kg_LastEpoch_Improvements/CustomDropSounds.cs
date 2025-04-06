@@ -8,11 +8,11 @@ using Object = UnityEngine.Object;
 
 namespace kg_LastEpoch_Improvements;
 
-public static class SelectSound
+public static class CustomDropSounds
 {
     public static string CustomSoundMapperPath = Path.Combine(MelonEnvironment.UserDataDirectory, "CustomDropSounds", "CustomSoundMapper.json");
     public static Dictionary<string, string> RuleToSound = [];
-    public static Dictionary<string, AudioSource> CustomDropSounds  = [];
+    public static Dictionary<string, AudioSource> Sounds  = [];
     private static AudioSource CreateAudioSource(AudioClip clip)
     {
         GameObject audioSource = new GameObject("kg_AudioSource") { hideFlags = HideFlags.HideAndDontSave };
@@ -33,11 +33,11 @@ public static class SelectSound
     }
     private static IEnumerator LoadCustomDropSounds(string path)
     {
-        if (CustomDropSounds.Count > 0)
+        if (Sounds.Count > 0)
         {
-            foreach (KeyValuePair<string, AudioSource> kvp in CustomDropSounds)
+            foreach (KeyValuePair<string, AudioSource> kvp in Sounds)
                 Object.Destroy(kvp.Value.gameObject);
-            CustomDropSounds.Clear(); 
+            Sounds.Clear(); 
         }
         string[] files = Directory.GetFiles(path, "*.mp3", SearchOption.AllDirectories)
                  .Concat(Directory.GetFiles(path, "*.wav", SearchOption.AllDirectories))
@@ -58,16 +58,16 @@ public static class SelectSound
             if (clip)
             {
                 clip.name = Path.GetFileNameWithoutExtension(files[i]);
-                CustomDropSounds[fNameNoExt] = CreateAudioSource(clip);
+                Sounds[fNameNoExt] = CreateAudioSource(clip);
             }
         }
-        MelonLogger.Msg($"Loaded {CustomDropSounds.Count} custom drop sounds");
+        MelonLogger.Msg($"Loaded {Sounds.Count} custom drop sounds");
         yield break;
     }
     public static bool TryPlaySoundDelayed(string name, float delay, float volume)
     {
-        if (CustomDropSounds.Count == 0 || !CustomDropSounds.ContainsKey(name)) return false;
-        MelonCoroutines.Start(DelaySound(CustomDropSounds[name], delay, volume));
+        if (Sounds.Count == 0 || !Sounds.ContainsKey(name)) return false;
+        MelonCoroutines.Start(DelaySound(Sounds[name], delay, volume));
         return true;
     }
     private static IEnumerator DelaySound(AudioSource source, float delay, float volume)
@@ -78,14 +78,14 @@ public static class SelectSound
     public static void Load()
     {
         LoadSoundsSync();
-        if (File.Exists(SelectSound.CustomSoundMapperPath))
+        if (File.Exists(CustomDropSounds.CustomSoundMapperPath))
         {
             try
             {
-                string json = File.ReadAllText(SelectSound.CustomSoundMapperPath);
-                SelectSound.RuleToSound = fastJSON.JSON.ToObject<Dictionary<string, string>>(json);
+                string json = File.ReadAllText(CustomDropSounds.CustomSoundMapperPath);
+                CustomDropSounds.RuleToSound = fastJSON.JSON.ToObject<Dictionary<string, string>>(json);
             }
-            catch (Exception) { SelectSound.RuleToSound = []; }
+            catch (Exception) { CustomDropSounds.RuleToSound = []; }
         }
     }
     [HarmonyPatch(typeof(RuleUI),nameof(RuleUI.Awake))]
@@ -117,7 +117,7 @@ public static class SelectSound
                 copyFromDropdown.transform.GetChild(0).GetComponent<TMP_Text>().color = Color.green;
                 copyFromDropdown.transform.GetChild(0).GetComponent<TMP_Text>().text = "Custom Sound";
                 Dropdown = new KeyValuePair<GameObject, ColoredIconDropdown>(copyFromDropdown, dropdown);
-                LastOrdered = new List<string>(CustomDropSounds.Keys);
+                LastOrdered = new List<string>(Sounds.Keys);
                 LastOrdered.Sort((x, y) => string.Compare(x, y, StringComparison.InvariantCultureIgnoreCase));
                 LastOrdered.Insert(0, "None");
                 Il2CppSystem.Collections.Generic.List<string> options  = new();

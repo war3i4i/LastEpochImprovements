@@ -6,14 +6,11 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-		CheatVersion|Any CPU = CheatVersion|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.CheatVersion|Any CPU.ActiveCfg = CheatVersion|Any CPU
-		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.CheatVersion|Any CPU.Build.0 = CheatVersion|Any CPU
 	EndGlobalSection
 EndGlobal
