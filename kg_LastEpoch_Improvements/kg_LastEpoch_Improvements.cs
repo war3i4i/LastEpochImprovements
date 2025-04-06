@@ -154,51 +154,52 @@ public class kg_LastEpoch_Improvements : MelonMod
             if (!rule.isEnabled || rule.type is Rule.RuleOutcome.HIDE) return false;
             return rule.emphasized || ShowAll.Value;
         }
-
-        private static void Prefix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label, GroundItemRarityVisuals groundItemRarityVisuals)
+        private static void ShowOnMap(GroundItemVisuals visuals, Rule rule, ItemDataUnpacked itemData, GroundItemLabel label, GroundItemRarityVisuals groundItemRarityVisuals)
         {
+            if (rule != null && CustomDropSounds.RuleHasCustomSound(rule, out string sName))
+            {
+                PlayOneShotSound oneShotComp = groundItemRarityVisuals?.GetComponent<PlayOneShotSound>();
+                bool customSound = CustomDropSounds.TryPlaySoundDelayed(sName, oneShotComp?.delayDuration ?? 0f, 1f);
+                if (oneShotComp && customSound) oneShotComp.StopAllCoroutines();
+            } 
+            GameObject customMapIcon = Object.Instantiate(CustomMapIcon, DMMap.Instance.iconContainer.transform);
+            customMapIcon.SetActive(true);
+            customMapIcon.GetComponent<CustomIconProcessor>().Init(visuals.gameObject, label);
+            string path = ItemList.instance.GetBaseTypeName(itemData.itemType).Replace(" ", "_").ToLower();
+            string itemName = itemData.BaseNameForTooltipSprite;
+            if (itemData.isUniqueSetOrLegendary())
+            { 
+                customMapIcon.GetComponent<CustomIconProcessor>().ShowLegendaryPotential(itemData.legendaryPotential, itemData.weaversWill);
+                if (UniqueList.instance.uniques.Count > itemData.uniqueID && UniqueList.instance.uniques.get(itemData.uniqueID) is { } entry)
+                {
+                    path = "uniques";
+                    itemName = entry.name.Replace(" ", "_");
+                }
+            } 
+            string fullPath = $"gear/{path}/{itemName}";
+            if (!IconCache.TryGetValue(fullPath, out var icon) || !icon)
+            {
+                icon = Resources.Load<Sprite>(fullPath);
+                IconCache[fullPath] = icon;
+            }
+            customMapIcon.GetComponent<Image>().sprite = ItemList.instance.defaultItemBackgroundSprite;
+            customMapIcon.GetComponent<Image>().color = GetColorForItemRarity(itemData);
+            customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = icon;
+        }
+        private static void Prefix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label, GroundItemRarityVisuals groundItemRarityVisuals)
+        { 
+            if (itemData.rarity == 9)
+            {
+                ShowOnMap(__instance, null, itemData, label, groundItemRarityVisuals);
+                return;
+            }
             ItemFilter filter = ItemFilterManager.Instance.Filter;
             if (filter == null) return;
             foreach (Rule rule in filter.rules)
             {
-                if (!ShouldShow(rule)) continue;
-                 
-                if (rule.Match(itemData) || itemData.rarity == 9) 
-                {
-                    if (CustomDropSounds.RuleHasCustomSound(rule, out string sName))
-                    {
-                        PlayOneShotSound oneShotComp = groundItemRarityVisuals?.GetComponent<PlayOneShotSound>();
-                        bool customSound = CustomDropSounds.TryPlaySoundDelayed(sName, oneShotComp?.delayDuration ?? 0f, 1f);
-                        if (oneShotComp && customSound) oneShotComp.StopAllCoroutines();
-                    }
-                    
-                    GameObject customMapIcon = Object.Instantiate(CustomMapIcon, DMMap.Instance.iconContainer.transform);
-                    customMapIcon.SetActive(true);
-                    customMapIcon.GetComponent<CustomIconProcessor>().Init(__instance.gameObject, label);
-                    string path = ItemList.instance.GetBaseTypeName(itemData.itemType).Replace(" ", "_").ToLower();
-                    string itemName = itemData.BaseNameForTooltipSprite;
-                    if (itemData.isUniqueSetOrLegendary())
-                    {
-                        customMapIcon.GetComponent<CustomIconProcessor>().ShowLegendaryPotential(itemData.legendaryPotential, itemData.weaversWill);
-                        if (UniqueList.instance.uniques.Count > itemData.uniqueID && UniqueList.instance.uniques.get(itemData.uniqueID) is { } entry)
-                        {
-                            path = "uniques";
-                            itemName = entry.name.Replace(" ", "_");
-                        }
-                    }
-                    string fullPath = $"gear/{path}/{itemName}";
-                    if (!IconCache.TryGetValue(fullPath, out var icon))
-                    {
-                        MelonLogger.Msg($"Couldn't find icon for {itemName} ({path}), loading from resources");
-                        icon = Resources.Load<Sprite>(fullPath);
-                        IconCache[fullPath] = icon;
-                    }else MelonLogger.Msg($"Found icon for {itemName} ({path}) in cache");
-                    customMapIcon.GetComponent<Image>().sprite = ItemList.instance.defaultItemBackgroundSprite;
-                    customMapIcon.GetComponent<Image>().color = GetColorForItemRarity(itemData);
-                    customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = icon;
-                    
-                    return;
-                }
+                if (!ShouldShow(rule) || !rule.Match(itemData)) continue;
+                ShowOnMap(__instance, rule, itemData, label, groundItemRarityVisuals);
+                return;
             }
         }
     }
