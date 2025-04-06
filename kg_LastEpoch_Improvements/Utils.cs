@@ -95,4 +95,5 @@ public static class Utils
         dropdown.value = (int)(object)option.Value;
         dropdown.onValueChanged.AddListener(new Action<int>(_ => a(dropdown.value)));
     }
+    public static int CharToIntFast(this char c) => c - '0';
 }

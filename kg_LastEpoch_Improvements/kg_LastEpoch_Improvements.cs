@@ -1,15 +1,8 @@
-﻿#define FOGCAMERAVERSION 
+﻿//#define FOGCAMERAVERSION 
 using Il2CppDMM;
-using Il2CppInterop.Common;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppItemFiltering;
-using Il2CppLE.Telemetry;
-using Il2CppLE.UI;
-using Il2CppSystem.Net;
-using Il2CppTMPro;
 using MelonLoader;
-using MelonLoader.Utils;
-using UnityEngine.Networking;
 using Object = UnityEngine.Object;
 
 [assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.7", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
@@ -18,7 +11,6 @@ namespace kg_LastEpoch_Improvements;
 
 public class kg_LastEpoch_Improvements : MelonMod
 {
-    private static kg_LastEpoch_Improvements _thistype; 
     private static MelonPreferences_Category ImprovementsModCategory; 
     private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll;
@@ -64,11 +56,10 @@ public class kg_LastEpoch_Improvements : MelonMod
     
     public override void OnInitializeMelon()
     { 
-        _thistype = this;
         ImprovementsModCategory = MelonPreferences.CreateCategory("kg_Improvements");
         ShowAll = ImprovementsModCategory.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
-        AffixShowRoll = ImprovementsModCategory.CreateEntry("Show Affix Roll New", DisplayAffixType.None, "Show Affix Roll New", "Show each affix roll on item");
-        ShowAffixOnLabel = ImprovementsModCategory.CreateEntry("Show Affix On Label", DisplayAffixType_GroundLabel.None, "Show Affix On Label Type", "Show each affix roll on item label (ground)");
+        AffixShowRoll = ImprovementsModCategory.CreateEntry("Item Tooltip Style", DisplayAffixType.New_Style, "Show Affix Roll New", "Show each affix roll on item");
+        ShowAffixOnLabel = ImprovementsModCategory.CreateEntry("Item Ground Label Style", DisplayAffixType_GroundLabel.With_Tier_Filter_Only, "Show Affix On Label Type", "Show each affix roll on item label (ground)");
         AutoStoreCraftMaterials = ImprovementsModCategory.CreateEntry("AutoStoreCraftMaterials", false, "Auto storage craft materials", "Automatic storage of craft materials from the inventory");
 #if FOGCAMERAVERSION
         FogOfWar = ImprovementsModCategory.CreateEntry("Fog of war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
@@ -105,7 +96,7 @@ public class kg_LastEpoch_Improvements : MelonMod
                 _ => __result 
             };
         }
-    }  
+    }
  
     [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.UniqueBasicModFormatter))]
     private static class TooltipItemManager_FormatUniqueModAffixString_Patch 
@@ -126,7 +117,7 @@ public class kg_LastEpoch_Improvements : MelonMod
     [HarmonyPatch(typeof(TooltipItemManager),nameof(TooltipItemManager.ImplicitFormatter))]
     private static class TooltipItemManager_FormatMod_Patch
     {
-        private static void Postfix(ItemDataUnpacked item, int implicitNumber, ref string __result, bool isComparsionItem)
+        private static void Postfix(ItemDataUnpacked item, int implicitNumber, ref string __result)
         {
             if (item == null || AffixShowRoll.Value is DisplayAffixType.None || item.isSet()) return;
             __result = AffixShowRoll.Value switch
@@ -150,19 +141,18 @@ public class kg_LastEpoch_Improvements : MelonMod
             if (string.IsNullOrWhiteSpace(ruleNameToLower)) return;
             int indexOf = ruleNameToLower.IndexOf("lpmin:", StringComparison.Ordinal);
             if (indexOf == -1) return;
-            char number = ruleNameToLower[indexOf + 6];
-            if (int.TryParse(number.ToString(), out int lpmin)) __result &= data.legendaryPotential >= lpmin;
+            __result &= data.legendaryPotential >= ruleNameToLower[indexOf + 6].CharToIntFast();
         }
     }
 
     [HarmonyPatch(typeof(GroundItemVisuals), nameof(GroundItemVisuals.initialise), typeof(ItemDataUnpacked), typeof(uint), typeof(GroundItemLabel), typeof(GroundItemRarityVisuals), typeof(bool))]
     private static class GroundItemVisuals_initialise_Patch
     {
+        private static readonly Dictionary<string, Sprite> IconCache = [];
         private static bool ShouldShow(Rule rule)
         {
             if (!rule.isEnabled || rule.type is Rule.RuleOutcome.HIDE) return false;
-            if (ShowAll.Value) return true;
-            return rule.emphasized;
+            return rule.emphasized || ShowAll.Value;
         }
 
         private static void Prefix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label, GroundItemRarityVisuals groundItemRarityVisuals)
@@ -196,8 +186,13 @@ public class kg_LastEpoch_Improvements : MelonMod
                             itemName = entry.name.Replace(" ", "_");
                         }
                     }
-
-                    Sprite icon = Resources.Load<Sprite>($"gear/{path}/{itemName}");
+                    string fullPath = $"gear/{path}/{itemName}";
+                    if (!IconCache.TryGetValue(fullPath, out var icon))
+                    {
+                        MelonLogger.Msg($"Couldn't find icon for {itemName} ({path}), loading from resources");
+                        icon = Resources.Load<Sprite>(fullPath);
+                        IconCache[fullPath] = icon;
+                    }else MelonLogger.Msg($"Found icon for {itemName} ({path}) in cache");
                     customMapIcon.GetComponent<Image>().sprite = ItemList.instance.defaultItemBackgroundSprite;
                     customMapIcon.GetComponent<Image>().color = GetColorForItemRarity(itemData);
                     customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = icon;
@@ -214,11 +209,8 @@ public class kg_LastEpoch_Improvements : MelonMod
         private Text _text;
         private RectTransform thisTransform;
         private GroundItemLabel _label;
-
-        private void Awake()
-        {
-            _text = transform.GetChild(1).GetComponent<Text>();
-        }
+        
+        private void Awake() => _text = transform.GetChild(1).GetComponent<Text>();
 
         public void Init(GameObject toTrack, GroundItemLabel label)
         {
@@ -250,7 +242,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         } 
 
         private void PointerExit()
-        {
+        { 
             if (_label != null && _label && _label.tooltipItem) _label.tooltipItem.OnPointerExit(null);
         } 
 
@@ -388,7 +380,7 @@ public class kg_LastEpoch_Improvements : MelonMod
     private static class InventoryPanelUI_Awake_Patch
     {
         public static int AwakeFrame;
-        private static void Postfix(InventoryPanelUI __instance) => AwakeFrame = Time.frameCount;
+        private static void Postfix() => AwakeFrame = Time.frameCount;
     }
     [HarmonyPatch(typeof(InventoryPanelUI), nameof(InventoryPanelUI.OpenInventoryPanel))]
     private static class InventoryPanelUI_OpenInventoryPanel_Patch

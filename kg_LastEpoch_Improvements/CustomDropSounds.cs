@@ -10,9 +10,9 @@ namespace kg_LastEpoch_Improvements;
 
 public static class CustomDropSounds
 {
-    public static string CustomSoundMapperPath = Path.Combine(MelonEnvironment.UserDataDirectory, "CustomDropSounds", "CustomSoundMapper.json");
-    public static Dictionary<string, string> RuleToSound = [];
-    public static Dictionary<string, AudioSource> Sounds  = [];
+    private static readonly string CustomSoundMapperPath = Path.Combine(MelonEnvironment.UserDataDirectory, "CustomDropSounds", "CustomSoundMapper.json");
+    private static Dictionary<string, string> RuleToSound = [];
+    private static readonly Dictionary<string, AudioSource> Sounds  = [];
     private static AudioSource CreateAudioSource(AudioClip clip)
     {
         GameObject audioSource = new GameObject("kg_AudioSource") { hideFlags = HideFlags.HideAndDontSave };
@@ -66,8 +66,8 @@ public static class CustomDropSounds
     }
     public static bool TryPlaySoundDelayed(string name, float delay, float volume)
     {
-        if (Sounds.Count == 0 || !Sounds.ContainsKey(name)) return false;
-        MelonCoroutines.Start(DelaySound(Sounds[name], delay, volume));
+        if (Sounds.Count == 0 || !Sounds.TryGetValue(name, out var sound)) return false;
+        MelonCoroutines.Start(DelaySound(sound, delay, volume));
         return true;
     }
     private static IEnumerator DelaySound(AudioSource source, float delay, float volume)
@@ -76,16 +76,23 @@ public static class CustomDropSounds
         source.PlayOneShot(source.clip, volume);
     }
     public static void Load()
-    {
+    { 
+        fastJSON.JSON.Parameters = new fastJSON.JSONParameters
+        {
+            UseExtensions = false,
+            SerializeNullValues = false,
+            UseOptimizedDatasetSchema = true,
+            UseValuesOfEnums = true,
+        };
         LoadSoundsSync();
-        if (File.Exists(CustomDropSounds.CustomSoundMapperPath))
+        if (File.Exists(CustomSoundMapperPath))
         {
             try
             {
-                string json = File.ReadAllText(CustomDropSounds.CustomSoundMapperPath);
-                CustomDropSounds.RuleToSound = fastJSON.JSON.ToObject<Dictionary<string, string>>(json);
+                string json = File.ReadAllText(CustomSoundMapperPath);
+                RuleToSound = fastJSON.JSON.ToObject<Dictionary<string, string>>(json);
             }
-            catch (Exception) { CustomDropSounds.RuleToSound = []; }
+            catch (Exception) { RuleToSound = []; }
         }
     }
     [HarmonyPatch(typeof(RuleUI),nameof(RuleUI.Awake))]
@@ -98,11 +105,11 @@ public static class CustomDropSounds
             if (Utils.CopyFrom_Dropdown)
             {
                 Transform targetParent = __instance.transform.Find("Content/LeftRulePanel");
-                GameObject copyFromDropdown = UnityEngine.Object.Instantiate(Utils.CopyFrom_Dropdown, targetParent);
+                GameObject copyFromDropdown = Object.Instantiate(Utils.CopyFrom_Dropdown, targetParent);
                 copyFromDropdown.name = "CopyFromDropdown";
                 copyFromDropdown.transform.SetAsLastSibling();
-                UnityEngine.Object.DestroyImmediate(copyFromDropdown.transform.GetChild(2).gameObject);
-                UnityEngine.Object.DestroyImmediate(copyFromDropdown.transform.GetChild(0).gameObject);
+                Object.DestroyImmediate(copyFromDropdown.transform.GetChild(2).gameObject);
+                Object.DestroyImmediate(copyFromDropdown.transform.GetChild(0).gameObject);
                 ColoredIconDropdown dropdown = copyFromDropdown.transform.GetChild(1).GetComponent<ColoredIconDropdown>();
                 dropdown.onValueChanged.RemoveAllListeners();
                 dropdown.ClearOptions();
@@ -110,7 +117,7 @@ public static class CustomDropSounds
                 RectTransform rect = copyFromDropdown.GetComponent<RectTransform>(); 
                 rect.anchorMin = new Vector2(0, 0);
                 rect.anchorMax = new Vector2(0, 0);
-                rect.pivot = new Vector2(0, 0);
+                rect.pivot = new Vector2(0, 0); 
                 rect.anchoredPosition = new Vector2(10f, -80f);
                 rect.GetComponent<VerticalLayoutGroup>().spacing = -10f; 
                 copyFromDropdown.transform.GetChild(0).GetComponent<TMP_Text>().fontSize = 16;
@@ -134,16 +141,21 @@ public static class CustomDropSounds
     [HarmonyPatch(typeof(RuleUI),nameof(RuleUI.Init))]
     private static class RuleUI_Init_Patch
     {
-        private static void Postfix(LootFilterUI __instance, Rule rule, RuleUI.PanelMode mode)
+        private static void Postfix(Rule rule)
         {
             if (rule == null) return;
             if (!RuleUI_Awake_Patch.Dropdown.Value) return;
+            if (Sounds.Count == 0)
+            {
+                RuleUI_Awake_Patch.Dropdown.Key.SetActive(false);
+                return;
+            }
+            RuleUI_Awake_Patch.Dropdown.Key.SetActive(true);
             ColoredIconDropdown dropdown = RuleUI_Awake_Patch.Dropdown.Value;
             if (RuleHasCustomSound(rule, out string sName))
             {
                 int index = RuleUI_Awake_Patch.LastOrdered.IndexOf(sName);
-                if (index != -1) dropdown.value = index;
-                else dropdown.value = 0;
+                dropdown.value = index != -1 ? index : 0;
             }
             else dropdown.value = 0;
         }
@@ -156,15 +168,16 @@ public static class CustomDropSounds
             if (__instance.rule == null || !RuleUI_Awake_Patch.Dropdown.Value) return;
             string ruleName = __instance.rule.nameOverride.Trim();
             if (string.IsNullOrWhiteSpace(ruleName)) return;
+            int index = RuleUI_Awake_Patch.Dropdown.Value.value;
+            if (index < 0 || index >= RuleUI_Awake_Patch.LastOrdered.Count) return;
             if (RuleUI_Awake_Patch.Dropdown.Value.value == 0)
             {
                 if (RuleToSound.ContainsKey(ruleName)) RuleToSound.Remove(ruleName);
             }
             else
             {
-                string soundName = RuleUI_Awake_Patch.LastOrdered[RuleUI_Awake_Patch.Dropdown.Value.value];
-                if (RuleToSound.ContainsKey(ruleName)) RuleToSound[ruleName] = soundName;
-                else RuleToSound.Add(ruleName, soundName);
+                string soundName = RuleUI_Awake_Patch.LastOrdered[index];
+                RuleToSound[ruleName] = soundName;
             }
             string json = fastJSON.JSON.ToNiceJSON(RuleToSound);
             try
