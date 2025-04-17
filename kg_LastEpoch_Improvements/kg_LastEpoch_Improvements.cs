@@ -5,7 +5,7 @@ using Il2CppItemFiltering;
 using MelonLoader;
 using Object = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.7", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.8", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
 
 namespace kg_LastEpoch_Improvements;
 
@@ -19,7 +19,6 @@ public class kg_LastEpoch_Improvements : MelonMod
     private static MelonPreferences_Entry<bool> FogOfWar; 
     private static MelonPreferences_Entry<bool> EnhancedCamera; 
 #endif
-    private static MelonPreferences_Entry<bool> AutoStoreCraftMaterials;
     private static GameObject CustomMapIcon;
 
     private enum DisplayAffixType { None, Old_Style, New_Style, Letter_Style };
@@ -49,7 +48,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         textComponent.rectTransform.anchoredPosition = new Vector2(64, 0);
         textComponent.horizontalOverflow = HorizontalWrapMode.Overflow;
         textComponent.verticalOverflow = VerticalWrapMode.Overflow;
-        Outline outline = textComponent.AddComponent<Outline>(); 
+        Outline outline = textComponent.AddComponent<Outline>();  
         outline.effectColor = Color.black;
         CustomMapIcon.AddComponent<CustomIconProcessor>();
     }
@@ -60,7 +59,6 @@ public class kg_LastEpoch_Improvements : MelonMod
         ShowAll = ImprovementsModCategory.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
         AffixShowRoll = ImprovementsModCategory.CreateEntry("Item Tooltip Style", DisplayAffixType.New_Style, "Show Affix Roll New", "Show each affix roll on item");
         ShowAffixOnLabel = ImprovementsModCategory.CreateEntry("Item Ground Label Style", DisplayAffixType_GroundLabel.With_Tier_Filter_Only, "Show Affix On Label Type", "Show each affix roll on item label (ground)");
-        AutoStoreCraftMaterials = ImprovementsModCategory.CreateEntry("AutoStoreCraftMaterials", false, "Auto storage craft materials", "Automatic storage of craft materials from the inventory");
 #if FOGCAMERAVERSION
         FogOfWar = ImprovementsModCategory.CreateEntry("Fog of war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
         EnhancedCamera = ImprovementsModCategory.CreateEntry("Enhanced Camera", false, "Enhanced camera", "Enhanced camera angles and zoom");
@@ -91,13 +89,13 @@ public class kg_LastEpoch_Improvements : MelonMod
             __result = AffixShowRoll.Value switch
             {
                 DisplayAffixType.Old_Style => __result.Style1_AffixRoll(affix),
-                DisplayAffixType.New_Style => __result.Style2_AffixRoll(affix), 
-                DisplayAffixType.Letter_Style => __result.Letter_Style_AffixRoll(affix), 
-                _ => __result 
+                DisplayAffixType.New_Style => __result.Style2_AffixRoll(affix),
+                DisplayAffixType.Letter_Style => __result.Letter_Style_AffixRoll(affix),
+                _ => __result
             };
         }
     }
- 
+
     [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.UniqueBasicModFormatter))]
     private static class TooltipItemManager_FormatUniqueModAffixString_Patch 
     {
@@ -148,7 +146,7 @@ public class kg_LastEpoch_Improvements : MelonMod
     [HarmonyPatch(typeof(GroundItemVisuals), nameof(GroundItemVisuals.initialise), typeof(ItemDataUnpacked), typeof(uint), typeof(GroundItemLabel), typeof(GroundItemRarityVisuals), typeof(bool))]
     private static class GroundItemVisuals_initialise_Patch
     {
-        private static readonly Dictionary<string, Sprite> IconCache = [];
+        //private static readonly Dictionary<string, Sprite> IconCache = [];
         private static bool ShouldShow(Rule rule)
         {
             if (!rule.isEnabled || rule.type is Rule.RuleOutcome.HIDE) return false;
@@ -161,52 +159,52 @@ public class kg_LastEpoch_Improvements : MelonMod
                 PlayOneShotSound oneShotComp = groundItemRarityVisuals?.GetComponent<PlayOneShotSound>();
                 bool customSound = CustomDropSounds.TryPlaySoundDelayed(sName, oneShotComp?.delayDuration ?? 0f, 1f);
                 if (oneShotComp && customSound) oneShotComp.StopAllCoroutines();
-            } 
+            }
             GameObject customMapIcon = Object.Instantiate(CustomMapIcon, DMMap.Instance.iconContainer.transform);
             customMapIcon.SetActive(true);
             customMapIcon.GetComponent<CustomIconProcessor>().Init(visuals.gameObject, label);
-            string path = ItemList.instance.GetBaseTypeName(itemData.itemType).Replace(" ", "_").ToLower();
-            string itemName = itemData.BaseNameForTooltipSprite;
-            if (itemData.isUniqueSetOrLegendary())
-            { 
-                customMapIcon.GetComponent<CustomIconProcessor>().ShowLegendaryPotential(itemData.legendaryPotential, itemData.weaversWill);
-                if (UniqueList.instance.uniques.Count > itemData.uniqueID && UniqueList.instance.uniques.get(itemData.uniqueID) is { } entry)
-                {
-                    path = "uniques";
-                    itemName = entry.name.Replace(" ", "_");
-                }
-            } 
-            string fullPath = $"gear/{path}/{itemName}";
-            if (!IconCache.TryGetValue(fullPath, out var icon) || !icon)
-            {
-                icon = Resources.Load<Sprite>(fullPath);
-                IconCache[fullPath] = icon;
-            }
+            if (itemData.isUniqueSetOrLegendary()) customMapIcon.GetComponent<CustomIconProcessor>().ShowLegendaryPotential(itemData.legendaryPotential, itemData.weaversWill);
             customMapIcon.GetComponent<Image>().sprite = ItemList.instance.defaultItemBackgroundSprite;
             customMapIcon.GetComponent<Image>().color = GetColorForItemRarity(itemData);
-            customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = icon;
+            customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = TooltipItemManager.instance.GetItemSprite(itemData.getAsUnpacked(), ItemUIContext.Default);;
         }
         private static void Prefix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label, GroundItemRarityVisuals groundItemRarityVisuals)
-        { 
-            if (itemData.rarity == 9)
+        {
+            try
             {
-                ShowOnMap(__instance, null, itemData, label, groundItemRarityVisuals);
-                return;
+                if (itemData.rarity == 9)
+                {
+                    ShowOnMap(__instance, null, itemData, label, groundItemRarityVisuals);
+                    return;
+                }
+
+                ItemFilter filter = ItemFilterManager.Instance.Filter;
+                if (filter == null) return;
+                foreach (Rule rule in filter.rules)
+                {
+                    if (!ShouldShow(rule) || !rule.Match(itemData)) continue;
+                    ShowOnMap(__instance, rule, itemData, label, groundItemRarityVisuals);
+                    return;
+                }
             }
-            ItemFilter filter = ItemFilterManager.Instance.Filter;
-            if (filter == null) return;
-            foreach (Rule rule in filter.rules)
+            catch (Exception ex)
             {
-                if (!ShouldShow(rule) || !rule.Match(itemData)) continue;
-                ShowOnMap(__instance, rule, itemData, label, groundItemRarityVisuals);
-                return;
+                MelonLogger.Error(ex);
             }
         }
+    }
+    
+    [HarmonyPatch(typeof(MinimapFogOfWar),nameof(MinimapFogOfWar.Start))]
+    private static class MinimapHook
+    {
+        private static RectTransform Map;
+        public static Vector3 Offset => new Vector3(Map.sizeDelta.x / 2f, Map.sizeDelta.y / 2f, 0f);
+        private static void Postfix(MinimapFogOfWar __instance) => Map = __instance.transform.Find("Map").GetComponent<RectTransform>();
     }
 
     private class CustomIconProcessor : MonoBehaviour
     {
-        public GameObject _trackable;
+        public GameObject _trackable; 
         private Text _text;
         private RectTransform thisTransform;
         private GroundItemLabel _label;
@@ -214,16 +212,16 @@ public class kg_LastEpoch_Improvements : MelonMod
         private void Awake() => _text = transform.GetChild(1).GetComponent<Text>();
 
         public void Init(GameObject toTrack, GroundItemLabel label)
-        {
+        { 
             thisTransform = transform.GetComponent<RectTransform>();
-            transform.localPosition = DMMap.Instance.WorldtoUI(toTrack.transform.position);
-            _trackable = toTrack;
+            _trackable = toTrack; 
             _label = label;
+            transform.localPosition = DMMap.Instance.WorldtoUI(toTrack.transform.position) - MinimapHook.Offset;
         }
 
         public void ShowLegendaryPotential(int lp, int ww)
         {
-            if (lp > 0)
+            if (lp > 0) 
             {
                 _text.text += $"{lp}";
                 _text.color = new Color(1f, 0.5f, 0f);
@@ -236,7 +234,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         }
 
         private static CustomIconProcessor showingAffix;
-
+ 
         private void PointerEnter()
         {
             if (_label != null && _label && _label.tooltipItem) _label.tooltipItem.OnPointerEnter(null);
@@ -255,7 +253,7 @@ public class kg_LastEpoch_Improvements : MelonMod
                 return;
             }
 
-            transform.localPosition = DMMap.Instance.WorldtoUI(_trackable.transform.position);
+            transform.localPosition = DMMap.Instance.WorldtoUI(_trackable.transform.position) - MinimapHook.Offset;
             
             if (showingAffix == this)
             {
@@ -313,11 +311,6 @@ public class kg_LastEpoch_Improvements : MelonMod
                 ShowAll.Value = tf;
                 ImprovementsModCategory.SaveToFile();
             });
-            __instance.CreateNewOption_Toggle(CategoryName, "<color=green>Auto storage craft materials</color>", AutoStoreCraftMaterials, (ascm) =>
-            {
-                AutoStoreCraftMaterials.Value = ascm;
-                ImprovementsModCategory.SaveToFile();
-            });
         }
     }
 
@@ -372,25 +365,5 @@ public class kg_LastEpoch_Improvements : MelonMod
             Switch();
         }
     }
-#endif 
-
-    
-    //OpenInventoryPanel invokes at loadingscreen after InventoryPanelUI.Awake, we cannot call StoreMaterialsButtonPress() at this moment
-    //cause it throws an exception (probably some stuff didn't load yet)
-    [HarmonyPatch(typeof(InventoryPanelUI),nameof(InventoryPanelUI.Awake))]
-    private static class InventoryPanelUI_Awake_Patch
-    {
-        public static int AwakeFrame;
-        private static void Postfix() => AwakeFrame = Time.frameCount;
-    }
-    [HarmonyPatch(typeof(InventoryPanelUI), nameof(InventoryPanelUI.OpenInventoryPanel))]
-    private static class InventoryPanelUI_OpenInventoryPanel_Patch
-    {
-        private static void Postfix(InventoryPanelUI __instance)
-        {
-            if (AutoStoreCraftMaterials.Value && Time.frameCount != InventoryPanelUI_Awake_Patch.AwakeFrame)
-                __instance.StoreMaterialsButtonPress();
-        }
-    }
-
+#endif
 }

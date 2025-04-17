@@ -45,11 +45,6 @@ public static class CustomDropSounds
         for(int i = 0; i < files.Length; i++)
         {
             string fNameNoExt = Path.GetFileNameWithoutExtension(files[i]);
-            if (fNameNoExt.Contains(' ') || fNameNoExt.Contains(':'))
-            {
-                MelonLogger.Warning($"Custom drop sound file name cannot contain spaces or colons: {fNameNoExt}");
-                continue;
-            }
             UnityWebRequest www = UnityWebRequest.Get($"file://{files[i]}");
             var request = www.SendWebRequest();
             while (!request.isDone) { }
@@ -111,15 +106,17 @@ public static class CustomDropSounds
                 Object.DestroyImmediate(copyFromDropdown.transform.GetChild(2).gameObject);
                 Object.DestroyImmediate(copyFromDropdown.transform.GetChild(0).gameObject);
                 ColoredIconDropdown dropdown = copyFromDropdown.transform.GetChild(1).GetComponent<ColoredIconDropdown>();
-                dropdown.onValueChanged.RemoveAllListeners();
+                dropdown.onValueChanged.RemoveAllListeners(); 
                 dropdown.ClearOptions();
                 
-                RectTransform rect = copyFromDropdown.GetComponent<RectTransform>(); 
+                RectTransform rect = copyFromDropdown.GetComponent<RectTransform>();
                 rect.anchorMin = new Vector2(0, 0);
                 rect.anchorMax = new Vector2(0, 0);
-                rect.pivot = new Vector2(0, 0); 
-                rect.anchoredPosition = new Vector2(10f, -80f);
-                rect.GetComponent<VerticalLayoutGroup>().spacing = -10f; 
+                rect.pivot = new Vector2(0, 0);
+                rect.anchoredPosition = new Vector2(10f, 15f);
+                rect.GetChild(1).GetComponent<RectTransform>().anchoredPosition -= new Vector2(0f, 45f);
+                
+                Object.DestroyImmediate(rect.GetComponent<VerticalLayoutGroup>()); 
                 copyFromDropdown.transform.GetChild(0).GetComponent<TMP_Text>().fontSize = 16;
                 copyFromDropdown.transform.GetChild(0).GetComponent<TMP_Text>().color = Color.green;
                 copyFromDropdown.transform.GetChild(0).GetComponent<TMP_Text>().text = "Custom Sound";
