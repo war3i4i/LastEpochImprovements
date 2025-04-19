@@ -18,17 +18,18 @@ public static class RaresOnMap
     }
     
     [HarmonyPatch(typeof(ActorSync),nameof(ActorSync.ReceiveInitDisplayInformation))]
-    private static class ActorSync_MessageSyncRarit
+    private static class ActorSync_MessageSyncRarit 
     { 
         private static void Postfix(ActorSync __instance, byte rarity)
         {
             if (!kg_LastEpoch_Improvements.ShowRaresOnMap.Value) return;
-            if (__instance.IsLocalPlayer || rarity <= 1) return;
+            if (__instance is PlayerActorSync || rarity <= 1) return;
             GameObject customMapIcon = Object.Instantiate(kg_LastEpoch_Improvements.CustomMapIcon, DMMap.Instance.iconContainer.transform);
             customMapIcon.SetActive(true);
             customMapIcon.GetComponent<kg_LastEpoch_Improvements.CustomIconProcessor>().Init(__instance.actorVisuals.gameObject, null);
             customMapIcon.GetComponent<Image>().enabled = false;
             customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = GetIcon();
+            customMapIcon.name = $"rare_{__instance.gameObject.name}_{rarity}";
         }
     }
 }

@@ -111,13 +111,13 @@ public class kg_LastEpoch_Improvements : MelonMod
                 _ => __result
             };
         }
-    }
+    } 
     
     [HarmonyPatch(typeof(TooltipItemManager),nameof(TooltipItemManager.ImplicitFormatter))]
     private static class TooltipItemManager_FormatMod_Patch
     {
         private static void Postfix(ItemDataUnpacked item, int implicitNumber, ref string __result)
-        {
+        { 
             if (item == null || AffixShowRoll.Value is DisplayAffixType.None || item.isSet()) return;
             __result = AffixShowRoll.Value switch
             {
@@ -135,7 +135,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         private static void Postfix(Rule __instance, ItemDataUnpacked data, ref bool __result)
         {
             if (!__instance.isEnabled) return;
-
+  
             string ruleNameToLower = __instance.nameOverride.ToLower();
             if (string.IsNullOrWhiteSpace(ruleNameToLower)) return;
             int indexOf = ruleNameToLower.IndexOf("lpmin:", StringComparison.Ordinal);
