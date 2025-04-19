@@ -1,4 +1,5 @@
 ﻿using Il2Cpp;
+using MelonLoader;
 
 namespace kg_LastEpoch_Improvements;
 
@@ -83,7 +84,7 @@ public static class AffixRolls
         return finishedString.Insert(lastNewLine, toInsert);
     }
 
-    public static string Style2_AffixRoll(this string affixStr, ItemAffix affix)
+    public static string Style2_AffixRoll(this string affixStr, ItemAffix affix) 
     {
         float roll = affix.getRollFloat();
         return Modify_Custom(roll, affix.DisplayTier, affixStr);

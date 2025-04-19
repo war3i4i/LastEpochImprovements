@@ -4,15 +4,16 @@
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>disable</Nullable>
-        <Configurations>Debug;Release</Configurations>
+        <Configurations>Release;Special</Configurations>
         <Platforms>AnyCPU</Platforms>
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
 
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <PropertyGroup Condition=" '$(Configuration)' == 'Special' ">
       <Optimize>true</Optimize>
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    </PropertyGroup>
+      <DefineConstants>TRACE;SPECIALVERSION</DefineConstants>
+    </PropertyGroup> 
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
        <Optimize>true</Optimize>
@@ -58,6 +59,9 @@
       </Reference>
       <Reference Include="UnityEngine.CoreModule">
         <HintPath>Libs\UnityEngine.CoreModule.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine.ImageConversionModule">
+        <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Last Epoch\MelonLoader\Il2CppAssemblies\UnityEngine.ImageConversionModule.dll</HintPath>
       </Reference>
       <Reference Include="UnityEngine.InputLegacyModule">
         <HintPath>Libs\UnityEngine.InputLegacyModule.dll</HintPath>

@@ -1,25 +1,25 @@
-﻿//#define FOGCAMERAVERSION 
-using Il2CppDMM;
+﻿using Il2CppDMM;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppItemFiltering;
-using MelonLoader;
-using Object = UnityEngine.Object;
+using MelonLoader; 
+using Object = UnityEngine.Object; 
 
-[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.8", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.9", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
 
 namespace kg_LastEpoch_Improvements;
-
+ 
 public class kg_LastEpoch_Improvements : MelonMod
 {
     private static MelonPreferences_Category ImprovementsModCategory; 
     private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll;
     public static MelonPreferences_Entry<DisplayAffixType_GroundLabel> ShowAffixOnLabel; 
-#if FOGCAMERAVERSION
-    private static MelonPreferences_Entry<bool> FogOfWar; 
-    private static MelonPreferences_Entry<bool> EnhancedCamera; 
+#if SPECIALVERSION
+    private static MelonPreferences_Entry<bool> FogOfWar;  
+    private static MelonPreferences_Entry<bool> EnhancedCamera;
+    public static MelonPreferences_Entry<bool> ShowRaresOnMap;
 #endif
-    private static GameObject CustomMapIcon;
+    public static GameObject CustomMapIcon;
 
     private enum DisplayAffixType { None, Old_Style, New_Style, Letter_Style };
     public enum DisplayAffixType_GroundLabel { None, Without_Tier, Without_Tier_Filter_Only, With_Tier, With_Tier_Filter_Only, Letter_Without_Tier, Letter_Without_Tier_Filter_Only, Letter_With_Tier, Letter_With_Tier_Filter_Only }
@@ -59,9 +59,10 @@ public class kg_LastEpoch_Improvements : MelonMod
         ShowAll = ImprovementsModCategory.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
         AffixShowRoll = ImprovementsModCategory.CreateEntry("Item Tooltip Style", DisplayAffixType.New_Style, "Show Affix Roll New", "Show each affix roll on item");
         ShowAffixOnLabel = ImprovementsModCategory.CreateEntry("Item Ground Label Style", DisplayAffixType_GroundLabel.With_Tier_Filter_Only, "Show Affix On Label Type", "Show each affix roll on item label (ground)");
-#if FOGCAMERAVERSION
+#if SPECIALVERSION
         FogOfWar = ImprovementsModCategory.CreateEntry("Fog of war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
         EnhancedCamera = ImprovementsModCategory.CreateEntry("Enhanced Camera", false, "Enhanced camera", "Enhanced camera angles and zoom");
+        ShowRaresOnMap = ImprovementsModCategory.CreateEntry("Show Rares On Map", false, "Show Rares On Map (some monsters might bug out and never spawn)", "Show rare items on map");
 #endif
         ImprovementsModCategory.SetFilePath("UserData/kg_LastEpoch_Improvements.cfg", autoload: true);
         CreateCustomMapIcon();
@@ -95,7 +96,7 @@ public class kg_LastEpoch_Improvements : MelonMod
             };
         }
     }
-
+    
     [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.UniqueBasicModFormatter))]
     private static class TooltipItemManager_FormatUniqueModAffixString_Patch 
     {
@@ -142,16 +143,23 @@ public class kg_LastEpoch_Improvements : MelonMod
             __result &= data.legendaryPotential >= ruleNameToLower[indexOf + 6].CharToIntFast();
         }
     }
-
+  
+    public static bool CheckFilter(ItemDataUnpacked itemData, out Rule rule, bool bypass = false)
+    {
+        rule = null;
+        if (itemData == null) return false;
+        if (itemData.rarity == 9) return true;
+        ItemFilter filter = ItemFilterManager.Instance.Filter;
+        if (filter == null || filter.Match(itemData, out _, out _, out int matchingRuleNumber) == Rule.RuleOutcome.HIDE) return false;
+        if (matchingRuleNumber <= 0) return false;
+        rule = filter.rules.get(matchingRuleNumber);
+        if (rule == null) return false;
+        return bypass || rule.emphasized;
+    } 
+    
     [HarmonyPatch(typeof(GroundItemVisuals), nameof(GroundItemVisuals.initialise), typeof(ItemDataUnpacked), typeof(uint), typeof(GroundItemLabel), typeof(GroundItemRarityVisuals), typeof(bool))]
     private static class GroundItemVisuals_initialise_Patch
     {
-        //private static readonly Dictionary<string, Sprite> IconCache = [];
-        private static bool ShouldShow(Rule rule)
-        {
-            if (!rule.isEnabled || rule.type is Rule.RuleOutcome.HIDE) return false;
-            return rule.emphasized || ShowAll.Value;
-        }
         private static void ShowOnMap(GroundItemVisuals visuals, Rule rule, ItemDataUnpacked itemData, GroundItemLabel label, GroundItemRarityVisuals groundItemRarityVisuals)
         {
             if (rule != null && CustomDropSounds.RuleHasCustomSound(rule, out string sName))
@@ -166,26 +174,14 @@ public class kg_LastEpoch_Improvements : MelonMod
             if (itemData.isUniqueSetOrLegendary()) customMapIcon.GetComponent<CustomIconProcessor>().ShowLegendaryPotential(itemData.legendaryPotential, itemData.weaversWill);
             customMapIcon.GetComponent<Image>().sprite = ItemList.instance.defaultItemBackgroundSprite;
             customMapIcon.GetComponent<Image>().color = GetColorForItemRarity(itemData);
-            customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = TooltipItemManager.instance.GetItemSprite(itemData.getAsUnpacked(), ItemUIContext.Default);;
+            customMapIcon.transform.GetChild(0).GetComponent<Image>().sprite = TooltipItemManager.instance.GetItemSprite(itemData.getAsUnpacked(), ItemUIContext.Default);
         }
         private static void Prefix(GroundItemVisuals __instance, ItemDataUnpacked itemData, GroundItemLabel label, GroundItemRarityVisuals groundItemRarityVisuals)
         {
             try
             {
-                if (itemData.rarity == 9)
-                {
-                    ShowOnMap(__instance, null, itemData, label, groundItemRarityVisuals);
-                    return;
-                }
-
-                ItemFilter filter = ItemFilterManager.Instance.Filter;
-                if (filter == null) return;
-                foreach (Rule rule in filter.rules)
-                {
-                    if (!ShouldShow(rule) || !rule.Match(itemData)) continue;
+                if (CheckFilter(itemData, out Rule rule, ShowAll.Value)) 
                     ShowOnMap(__instance, rule, itemData, label, groundItemRarityVisuals);
-                    return;
-                }
             }
             catch (Exception ex)
             {
@@ -202,7 +198,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         private static void Postfix(MinimapFogOfWar __instance) => Map = __instance.transform.Find("Map").GetComponent<RectTransform>();
     }
 
-    private class CustomIconProcessor : MonoBehaviour
+    public class CustomIconProcessor : MonoBehaviour
     {
         public GameObject _trackable; 
         private Text _text;
@@ -214,9 +210,9 @@ public class kg_LastEpoch_Improvements : MelonMod
         public void Init(GameObject toTrack, GroundItemLabel label)
         { 
             thisTransform = transform.GetComponent<RectTransform>();
-            _trackable = toTrack; 
-            _label = label;
-            transform.localPosition = DMMap.Instance.WorldtoUI(toTrack.transform.position) - MinimapHook.Offset;
+            _trackable = toTrack;
+            _label = label; 
+            transform.localPosition = DMMap.Instance.WorldtoUI(toTrack?.transform.position ?? Vector3.zero) - MinimapHook.Offset;
         }
 
         public void ShowLegendaryPotential(int lp, int ww)
@@ -255,6 +251,8 @@ public class kg_LastEpoch_Improvements : MelonMod
 
             transform.localPosition = DMMap.Instance.WorldtoUI(_trackable.transform.position) - MinimapHook.Offset;
             
+            if (_label == null) return;
+            
             if (showingAffix == this)
             {
                 bool isMouseInside = RectTransformUtility.RectangleContainsScreenPoint(thisTransform, Input.mousePosition);
@@ -283,7 +281,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         private static void Postfix(SettingsPanelTabNavigable __instance)
         {
             const string CategoryName = "KG Improvements";
-#if FOGCAMERAVERSION
+#if SPECIALVERSION
             __instance.CreateNewOption_Toggle(CategoryName, "<color=green>Clear fog on map on start</color>", FogOfWar, (tf) =>
             {
                 FogOfWar.Value = tf;
@@ -294,7 +292,12 @@ public class kg_LastEpoch_Improvements : MelonMod
                 EnhancedCamera.Value = tf;
                 ImprovementsModCategory.SaveToFile(); 
                 CameraManager_Start_Patch.Switch();  
-            }); 
+            });
+            __instance.CreateNewOption_Toggle(CategoryName, "<color=green>Show Rares On Map</color>", ShowRaresOnMap, (tf) =>
+            {
+                ShowRaresOnMap.Value = tf;
+                ImprovementsModCategory.SaveToFile();
+            });
 #endif
             __instance.CreateNewOption_EnumDropdown(CategoryName, "<color=green>Affix Show Roll (Tooltip)</color>", "Show affix roll on tooltip text", AffixShowRoll, (i) =>
             {
@@ -314,7 +317,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         }
     }
 
-#if FOGCAMERAVERSION
+#if SPECIALVERSION
     [HarmonyPatch(typeof(MinimapFogOfWar), nameof(MinimapFogOfWar.Initialize))]
     private static class MinimapFogOfWar_Initialize_Patch
     {

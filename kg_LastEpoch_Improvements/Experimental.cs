@@ -23,20 +23,7 @@ public class Experimental
             if (ShowAffixOnLabel.Value is DisplayAffixType_GroundLabel.None) return;
             MelonCoroutines.Start(DelayRoutine(__instance));
         }
-
-        private static bool CheckFilter(ItemDataUnpacked item)
-        {
-            if (item.rarity == 9) return true;
-            if (ItemFilterManager.Instance.Filter == null) return false;
-            foreach (Rule rule in ItemFilterManager.Instance.Filter.rules)
-            {
-                if (!rule.isEnabled || rule.type is Rule.RuleOutcome.HIDE) continue;
-                bool result = rule.Match(item);
-                if (result) return true;
-            }
-            return false;
-        }
- 
+        
         private static IEnumerator DelayRoutine(GroundItemLabel item)
         {
             yield return null;
@@ -55,7 +42,7 @@ public class Experimental
             bool isFiltered = ShowAffixOnLabel.Value is (DisplayAffixType_GroundLabel.With_Tier_Filter_Only or DisplayAffixType_GroundLabel.Without_Tier_Filter_Only or DisplayAffixType_GroundLabel.Letter_With_Tier_Filter_Only or DisplayAffixType_GroundLabel.Letter_Without_Tier_Filter_Only);
             bool isLetter = ShowAffixOnLabel.Value is (DisplayAffixType_GroundLabel.Letter_With_Tier or DisplayAffixType_GroundLabel.Letter_Without_Tier or DisplayAffixType_GroundLabel.Letter_With_Tier_Filter_Only or DisplayAffixType_GroundLabel.Letter_Without_Tier_Filter_Only);
             
-            if (isFiltered && !CheckFilter(itemData)) yield break;
+            if (isFiltered && !kg_LastEpoch_Improvements.CheckFilter(itemData, out _, true)) yield break;
 
             string itemName = itemData.FullName;
             if (itemData.isUnique() && itemData.affixes.Count == 0)

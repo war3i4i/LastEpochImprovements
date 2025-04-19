@@ -4,13 +4,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "kg_LastEpoch_Improvements",
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+		Special|Any CPU = Special|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.Special|Any CPU.ActiveCfg = Special|Any CPU
+		{2DD909A8-7D21-49E2-855B-A95ACC075E22}.Special|Any CPU.Build.0 = Special|Any CPU
 	EndGlobalSection
 EndGlobal
