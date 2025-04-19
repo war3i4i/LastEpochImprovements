@@ -3,7 +3,7 @@ using Il2CppInterop.Runtime.Injection;
 using Il2CppItemFiltering;
 using MelonLoader; 
 using Object = UnityEngine.Object; 
-
+ 
 [assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.9", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
 
 namespace kg_LastEpoch_Improvements;

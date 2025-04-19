@@ -21,7 +21,7 @@ public static class AffixRolls
     public static string Style1_AffixRoll_Unique(this string affixStr, ItemDataUnpacked item, int uniqueModIndex, float modifierValue)
     {
         if (item.uniqueID > UniqueList.instance.uniques.Count) return affixStr;
-        if (UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return affixStr;
+        if (uniqueModIndex < 0 || UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return affixStr;
         UniqueItemMod uniqueMod = uniqueEntry.mods.get(uniqueModIndex);
         float min = uniqueMod.value;
         float max = uniqueMod.maxValue;
@@ -93,7 +93,7 @@ public static class AffixRolls
     public static string Style2_AffixRoll_Unique(this string affixStr, ItemDataUnpacked item, int uniqueModIndex, float modifierValue)
     {
         if (item.uniqueID > UniqueList.instance.uniques.Count) return affixStr;
-        if (UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return affixStr;
+        if (uniqueModIndex < 0 || UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return affixStr;
         UniqueItemMod uniqueMod = uniqueEntry.mods.get(uniqueModIndex);
         float min = uniqueMod.value;
         float max = uniqueMod.maxValue;
@@ -152,7 +152,7 @@ public static class AffixRolls
     public static string Letter_Style_AffixRoll_Unique(this string affixStr, ItemDataUnpacked item, int uniqueModIndex, float modifierValue)
     {
         if (item.uniqueID > UniqueList.instance.uniques.Count) return affixStr;
-        if (UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return affixStr;
+        if (uniqueModIndex < 0 || UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return affixStr;
         UniqueItemMod uniqueMod = uniqueEntry.mods.get(uniqueModIndex);
         float min = uniqueMod.value;
         float max = uniqueMod.maxValue;
