@@ -17,6 +17,7 @@ public static class UI_QoL
         if (!Input.GetKey(KeyCode.LeftShift) || !Input.GetKeyDown(KeyCode.Mouse2) || TooltipItemManager.instance?.activeParameters?.Item is not { } currentItem) return;
         BazaarStallType? type = currentItem.itemType.ToStall();
         if (type == null) return;
+        if (SceneManager.GetActiveScene().name != "Bazaar") return;
         UIBase.instance.closeInventory();
         BazaarUI bazaarUI = UIBase.instance.BazaarMenu;
         bazaarUI.FilterUI.ResetUI();
