@@ -43,7 +43,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         textChild.transform.SetParent(CustomMapIcon.transform);
         textChild.transform.localPosition = Vector3.zero;
         Text textComponent = textChild.AddComponent<Text>();
-        textComponent.fontSize = 15;
+        textComponent.fontSize = 15; 
         textComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
         textComponent.alignment = TextAnchor.MiddleLeft;
         textComponent.rectTransform.anchoredPosition = new Vector2(64, 0);
@@ -53,8 +53,9 @@ public class kg_LastEpoch_Improvements : MelonMod
         outline.effectColor = Color.black;
         CustomMapIcon.AddComponent<CustomIconProcessor>();
     }
-
+#if SPECIALVERSION
     public override void OnUpdate() => UI_QoL.Update();
+#endif
     public override void OnInitializeMelon()
     { 
         ImprovementsModCategory = MelonPreferences.CreateCategory("kg_Improvements");
@@ -69,12 +70,12 @@ public class kg_LastEpoch_Improvements : MelonMod
         ImprovementsModCategory.SetFilePath("UserData/kg_LastEpoch_Improvements.cfg", autoload: true);
         CreateCustomMapIcon();
         CustomDropSounds.Load();
-    }
+    } 
 
     private static Color GetColorForItemRarity(ItemDataUnpacked item)
     {
         if (item.isUnique()) return new Color(1f, 0.38f, 0f);
-        if (item.isSet()) return Color.green;
+        if (item.isSet()) return Color.green; 
         if (item.isUniqueSetOrLegendary()) return Color.red;
         if (item.isExaltedItem()) return Color.magenta;
         if (item.isRare()) return Color.yellow;
