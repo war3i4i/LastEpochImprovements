@@ -1,14 +1,15 @@
 ﻿using Il2CppDMM;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppItemFiltering;
+using Il2CppLE.Services.Bazaar;
 using MelonLoader; 
-using Object = UnityEngine.Object; 
+using Object = UnityEngine.Object;  
  
-[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.3.9", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.4.0", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
 
-namespace kg_LastEpoch_Improvements;
+namespace kg_LastEpoch_Improvements; 
  
-public class kg_LastEpoch_Improvements : MelonMod
+public class kg_LastEpoch_Improvements : MelonMod 
 {
     private static MelonPreferences_Category ImprovementsModCategory; 
     private static MelonPreferences_Entry<bool> ShowAll;
@@ -52,7 +53,8 @@ public class kg_LastEpoch_Improvements : MelonMod
         outline.effectColor = Color.black;
         CustomMapIcon.AddComponent<CustomIconProcessor>();
     }
-    
+
+    public override void OnUpdate() => UI_QoL.Update();
     public override void OnInitializeMelon()
     { 
         ImprovementsModCategory = MelonPreferences.CreateCategory("kg_Improvements");

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using Il2Cpp;
+using Il2CppLE.Data;
+using Il2CppLE.Services.Bazaar;
 using Il2CppLE.UI.Controls;
 using Il2CppTMPro;
 using MelonLoader;
@@ -96,4 +98,43 @@ public static class Utils
         dropdown.onValueChanged.AddListener(new Action<int>(_ => a(dropdown.value)));
     }
     public static int CharToIntFast(this char c) => c - '0';
+    public static Sprite ToSprite(this string base64)
+    {
+        byte[] bytes = Convert.FromBase64String(base64);
+        Texture2D texture = new Texture2D(1, 1);
+        texture.LoadImage(bytes);
+        texture.Apply();
+        return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+    }
+    public static BazaarStallType? ToStall(this byte itemType)
+    {
+        BazaarItemType type = (BazaarItemType)itemType;
+        return type switch
+        {
+            BazaarItemType.Helmet => BazaarStallType.HELMET,
+            BazaarItemType.BodyArmor => BazaarStallType.BODY_ARMOR,
+            BazaarItemType.Belt => BazaarStallType.BELT,
+            BazaarItemType.Boots => BazaarStallType.BOOTS,
+            BazaarItemType.Gloves => BazaarStallType.GLOVES,
+            BazaarItemType.OneHandedAxe => BazaarStallType.ONE_HANDED_AXE,
+            BazaarItemType.OneHandedDagger => BazaarStallType.ONE_HANDED_DAGGER,
+            BazaarItemType.OneHandedMaces => BazaarStallType.ONE_HANDED_MACES,
+            BazaarItemType.OneHandedSceptre => BazaarStallType.ONE_HANDED_SCEPTRE,
+            BazaarItemType.OneHandedSword => BazaarStallType.ONE_HANDED_SWORD,
+            BazaarItemType.Wand => BazaarStallType.WAND,
+            BazaarItemType.TwoHandedAxe => BazaarStallType.TWO_HANDED_AXE,
+            BazaarItemType.TwoHandedMace => BazaarStallType.TWO_HANDED_MACE,
+            BazaarItemType.TwoHandedSpear => BazaarStallType.TWO_HANDED_SPEAR,
+            BazaarItemType.TwoHandedStaff => BazaarStallType.TWO_HANDED_STAFF,
+            BazaarItemType.TwoHandedSword => BazaarStallType.TWO_HANDED_SWORD,
+            BazaarItemType.Quiver => BazaarStallType.QUIVER,
+            BazaarItemType.Shield => BazaarStallType.SHIELD,
+            BazaarItemType.Catalyst => BazaarStallType.CATALYST,
+            BazaarItemType.Amulet => BazaarStallType.AMULET,
+            BazaarItemType.Ring => BazaarStallType.RING,
+            BazaarItemType.Relic => BazaarStallType.RELIC,
+            BazaarItemType.Bow => BazaarStallType.BOW,
+            _ => null
+        };
+    }
 }
