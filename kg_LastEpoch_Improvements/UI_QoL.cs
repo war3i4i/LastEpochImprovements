@@ -58,7 +58,7 @@ public static class UI_QoL
         private static void Prefix(ItemDataUnpacked data, out string __state)
         {
             __state = null;
-            if (data.itemType.ToStall() == null || data.LoreText == null || SceneManager.GetActiveScene().name != "Bazaar") return;
+            if (data?.itemType.ToStall() == null || data.LoreText == null || SceneManager.GetActiveScene().name != "Bazaar") return;
             __state = data.LoreText;
             data.LoreText += $"\n<color=yellow><size=18>Shift+Middle Mouse to search for this item in the Bazaar</size></color>\n" +
                              $"<color=#808080><size=12>This also will include current item rarity , legendary potential and unique item name (if its unique or legendary)</size></color>";
