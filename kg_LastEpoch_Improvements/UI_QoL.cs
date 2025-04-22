@@ -48,7 +48,7 @@ public static class UI_QoL
                 bazaarUI.SearchPress();
                 yield break; 
             }
-            yield return null;
+            yield return null; 
         }
     }
     
