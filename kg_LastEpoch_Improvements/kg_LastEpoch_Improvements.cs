@@ -12,10 +12,10 @@ public class kg_LastEpoch_Improvements : MelonMod
 { 
     private static MelonPreferences_Category ImprovementsModCategory; 
     private static MelonPreferences_Entry<bool> ShowAll;
-    private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll;
+    private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll; 
     public static MelonPreferences_Entry<DisplayAffixType_GroundLabel> ShowAffixOnLabel; 
 #if SPECIALVERSION
-    private static MelonPreferences_Entry<bool> FogOfWar;   
+    private static MelonPreferences_Entry<bool> FogOfWar;    
     private static MelonPreferences_Entry<bool> EnhancedCamera; 
     public static MelonPreferences_Entry<bool> ShowRaresOnMap;
 #endif
@@ -87,22 +87,23 @@ public class kg_LastEpoch_Improvements : MelonMod
     private static class TooltipItemManager_AffixFormatter_Patch
     {
         private static ItemAffix TryGetMultiaffix(ItemDataUnpacked item, SP modProperty, AT tags)
-        {
-            foreach (var itemAffix in item.affixes)
+        { 
+            foreach (ItemAffix itemAffix in item.affixes)
             {
-                if (AffixList.instance.multiAffixes.FirstOrDefault(x => x.affixId == itemAffix.affixId) is not { } multiAffix) continue;
-                foreach (var p in multiAffix.affixProperties) if (p.tags == tags && p.property == modProperty)
+                if (AffixList.instance.multiAffixes.FirstOrDefault(x => x.affixId == itemAffix.affixId) is not { } multiAffix || multiAffix.affixProperties == null) continue;
+                foreach (AffixList.AffixProperty p in multiAffix.affixProperties) if (p.tags == tags && p.property == modProperty)
                 {
                     return itemAffix;
-                }
+                } 
             }
             return null;
-        }
+        } 
         
         private static void Postfix(ItemDataUnpacked item, ItemAffix affix, SP modProperty, AT tags, ref string __result) 
         {
+            if (item == null) return;
             affix ??= TryGetMultiaffix(item, modProperty, tags);
-            if (item == null || affix == null || AffixShowRoll.Value is DisplayAffixType.None) return;
+            if (affix == null || AffixShowRoll.Value is DisplayAffixType.None) return;
             __result = AffixShowRoll.Value switch
             {
                 DisplayAffixType.Old_Style => __result.Style1_AffixRoll(affix),

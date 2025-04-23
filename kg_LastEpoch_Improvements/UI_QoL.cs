@@ -1,10 +1,12 @@
 #if SPECIALVERSION
 using Il2CppLE.Services.Bazaar;
 using Il2CppLE.UI.Bazaar;
+using Il2CppLE.UI.MultiPicker;
 using Il2CppTMPro;
 using MelonLoader;
 using UnityEngine.Localization.Components;
 using UnityEngine.SceneManagement;
+using State = Il2CppLE.UI.MultiPicker.State;
 
 namespace kg_LastEpoch_Improvements;
  
@@ -43,9 +45,27 @@ public static class UI_QoL
                 bazaarUI.FilterUI.sortingSelection.SelectedSorting = SortingSelection.GOLD_LOW_FIRST;
                 bazaarUI.FilterUI.raritySelection.dropdown.value = (int)BazaarItemRarityHelper.GetBazaarItemRarity(item) + 1;
                 bazaarUI.FilterUI.raritySelection.SelectedRarity = new(BazaarItemRarityHelper.GetBazaarItemRarity(item));
+
+                if (item.isExaltedItem())
+                { 
+                    bazaarUI.filterUI.advancedButton.onClick.Invoke();
+                    bazaarUI.filterUI.affixesPicker.multiPickerOpener.openPickerButton.onClick.Invoke();
+                    bazaarUI.FilterUI.affixesPicker.ResetUI();
+                    List<ItemAffix> _6TierPlusMods = [];
+                    foreach (ItemAffix affix in item.affixes) if (affix.DisplayTier >= 6) _6TierPlusMods.Add(affix);
+                    State state = bazaarUI.FilterUI.affixesPicker.multiPickerOpener.multipicker.CurrentState;
+                    foreach (ItemAffix mod in _6TierPlusMods)
+                    {
+                        if (!state.Entries.TryGetValue(mod.affixId, out StatefulEntry val)) continue;
+                        val.selected = true;
+                        val.data = new AffixData() { tier = mod.DisplayTier };
+                    } 
+                    bazaarUI.filterUI.affixesPicker.multiPickerOpener.multipicker.confirmButton.onClick.Invoke();
+                    bazaarUI.filterUI.advancedButton.onClick.Invoke();
+                }
                 yield return new WaitForSeconds(0.5f);
                 bazaarUI.SearchPress();
-                yield break; 
+                yield break;  
             }
             yield return null; 
         }
@@ -81,11 +101,11 @@ public static class UI_QoL
             UnityEngine.Object.DestroyImmediate(newObj.GetComponent<SortInventoryButton>());
             newObj.transform.GetChild(0).GetComponent<Image>().color = backgroundColor;
             newObj.transform.GetChild(1).GetComponent<Image>().sprite = icon;
-            var layoutElement = newObj.transform.GetChild(1).GetComponent<LayoutElement>();
+            LayoutElement layoutElement = newObj.transform.GetChild(1).GetComponent<LayoutElement>();
             layoutElement.preferredWidth = layoutElement.preferredHeight;
             UnityEngine.Object.DestroyImmediate(newObj.transform.GetChild(2).GetComponent<LocalizeStringEvent>());
             newObj.transform.GetChild(2).GetComponent<TMP_Text>().text = name;
-            var button = newObj.GetComponent<Button>();
+            Button button = newObj.GetComponent<Button>();
             button.onClick.RemoveAllListeners(); 
             button.onClick.AddListener(onPress);
         }
@@ -99,7 +119,7 @@ public static class UI_QoL
         
         private static void Postfix(EnableWovenEchoesTabIfRelevant __instance)
         {
-            var copy = __instance.transform.Find("Tab Contents/Items Tab/Inventory Footer/Left_Buttons_Container/Sort").gameObject;
+            GameObject copy = __instance.transform.Find("Tab Contents/Items Tab/Inventory Footer/Left_Buttons_Container/Sort").gameObject;
             CreateButton(copy, "Stash", container_base64.ToSprite(), Color.green, () =>
             {
                 if (UIBase.instance.stashPanel.instance && UIBase.instance.stashPanel.instance.active) UIBase.instance.closeStash(true);

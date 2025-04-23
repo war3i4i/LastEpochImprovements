@@ -46,7 +46,7 @@ public static class CustomDropSounds
         {
             string fNameNoExt = Path.GetFileNameWithoutExtension(files[i]);
             UnityWebRequest www = UnityWebRequest.Get($"file://{files[i]}");
-            var request = www.SendWebRequest();
+            UnityWebRequestAsyncOperation request = www.SendWebRequest();
             while (!request.isDone) { }
             if (www.isNetworkError || www.isHttpError) continue;
             AudioClip clip = WebRequestWWW.InternalCreateAudioClipUsingDH(www.downloadHandler, www.url, false, true, AudioType.UNKNOWN);
@@ -61,7 +61,7 @@ public static class CustomDropSounds
     }
     public static bool TryPlaySoundDelayed(string name, float delay, float volume)
     {
-        if (Sounds.Count == 0 || !Sounds.TryGetValue(name, out var sound)) return false;
+        if (Sounds.Count == 0 || !Sounds.TryGetValue(name, out AudioSource sound)) return false;
         MelonCoroutines.Start(DelaySound(sound, delay, volume));
         return true;
     }
@@ -125,7 +125,7 @@ public static class CustomDropSounds
                 LastOrdered.Sort((x, y) => string.Compare(x, y, StringComparison.InvariantCultureIgnoreCase));
                 LastOrdered.Insert(0, "None");
                 Il2CppSystem.Collections.Generic.List<string> options  = new();
-                foreach (var sound in LastOrdered) options.Add(sound);
+                foreach (string sound in LastOrdered) options.Add(sound);
                 dropdown.AddOptions(options);
                 dropdown.value = 0;
             }

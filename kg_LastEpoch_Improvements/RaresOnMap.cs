@@ -10,7 +10,7 @@ public static class RaresOnMap
     private static Sprite GetIcon()
     {
         if (icon) return icon;
-        var texture = new Texture2D(1, 1);
+        Texture2D texture = new Texture2D(1, 1);
         texture.LoadImage(Convert.FromBase64String(Icon_Base64));
         texture.Apply();
         icon = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
