@@ -1,8 +1,5 @@
-﻿using Il2Cpp;
-using Il2CppItemFiltering;
-using Il2CppTMPro;
+﻿using Il2CppTMPro;
 using MelonLoader;
-using System.Collections;
 using static kg_LastEpoch_Improvements.kg_LastEpoch_Improvements;
 
 namespace kg_LastEpoch_Improvements;

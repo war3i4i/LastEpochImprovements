@@ -1,23 +1,22 @@
 ﻿using Il2CppDMM;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppItemFiltering;
-using Il2CppLE.Services.Bazaar;
 using MelonLoader; 
 using Object = UnityEngine.Object;  
  
-[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.4.1", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.4.2", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
 
 namespace kg_LastEpoch_Improvements; 
  
 public class kg_LastEpoch_Improvements : MelonMod 
-{
+{ 
     private static MelonPreferences_Category ImprovementsModCategory; 
     private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll;
     public static MelonPreferences_Entry<DisplayAffixType_GroundLabel> ShowAffixOnLabel; 
 #if SPECIALVERSION
-    private static MelonPreferences_Entry<bool> FogOfWar;  
-    private static MelonPreferences_Entry<bool> EnhancedCamera;
+    private static MelonPreferences_Entry<bool> FogOfWar;   
+    private static MelonPreferences_Entry<bool> EnhancedCamera; 
     public static MelonPreferences_Entry<bool> ShowRaresOnMap;
 #endif
     public static GameObject CustomMapIcon;
@@ -82,13 +81,27 @@ public class kg_LastEpoch_Improvements : MelonMod
         if (item.isMagicOrRare()) return Color.blue;
 
         return Color.white;
-    }
+    } 
 
     [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.AffixFormatter))]
     private static class TooltipItemManager_AffixFormatter_Patch
     {
-        private static void Postfix(ItemDataUnpacked item, ItemAffix affix, ref string __result)
+        private static ItemAffix TryGetMultiaffix(ItemDataUnpacked item, SP modProperty, AT tags)
         {
+            foreach (var itemAffix in item.affixes)
+            {
+                if (AffixList.instance.multiAffixes.FirstOrDefault(x => x.affixId == itemAffix.affixId) is not { } multiAffix) continue;
+                foreach (var p in multiAffix.affixProperties) if (p.tags == tags && p.property == modProperty)
+                {
+                    return itemAffix;
+                }
+            }
+            return null;
+        }
+        
+        private static void Postfix(ItemDataUnpacked item, ItemAffix affix, SP modProperty, AT tags, ref string __result) 
+        {
+            affix ??= TryGetMultiaffix(item, modProperty, tags);
             if (item == null || affix == null || AffixShowRoll.Value is DisplayAffixType.None) return;
             __result = AffixShowRoll.Value switch
             {
@@ -105,7 +118,7 @@ public class kg_LastEpoch_Improvements : MelonMod
     {
         private static void Postfix(ItemDataUnpacked item, ref string __result, int uniqueModIndex, float modifierValue)
         {
-            if (item == null || AffixShowRoll.Value is DisplayAffixType.None || item.isSet()) return;
+            if (item == null || AffixShowRoll.Value is DisplayAffixType.None) return;
             __result = AffixShowRoll.Value switch
             {
                 DisplayAffixType.Old_Style => __result.Style1_AffixRoll_Unique(item, uniqueModIndex, modifierValue),
@@ -121,7 +134,7 @@ public class kg_LastEpoch_Improvements : MelonMod
     {
         private static void Postfix(ItemDataUnpacked item, int implicitNumber, ref string __result)
         { 
-            if (item == null || AffixShowRoll.Value is DisplayAffixType.None || item.isSet()) return;
+            if (item == null || AffixShowRoll.Value is DisplayAffixType.None) return;
             __result = AffixShowRoll.Value switch
             {
                 DisplayAffixType.Old_Style => __result.Style1_Implicit(item, implicitNumber),

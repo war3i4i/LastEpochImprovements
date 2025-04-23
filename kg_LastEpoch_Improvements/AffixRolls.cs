@@ -1,7 +1,4 @@
-﻿using Il2Cpp;
-using MelonLoader;
-
-namespace kg_LastEpoch_Improvements;
+﻿namespace kg_LastEpoch_Improvements;
 
 public static class AffixRolls
 {
@@ -95,8 +92,8 @@ public static class AffixRolls
         if (item.uniqueID > UniqueList.instance.uniques.Count) return affixStr;
         if (uniqueModIndex < 0 || UniqueList.instance.uniques.get(item.uniqueID) is not { } uniqueEntry) return affixStr;
         UniqueItemMod uniqueMod = uniqueEntry.mods.get(uniqueModIndex);
-        float min = uniqueMod.value;
-        float max = uniqueMod.maxValue;
+        var min = uniqueMod.value;
+        var max = uniqueMod.maxValue;
         float roll = min == max || modifierValue > max ? 1 : (modifierValue - min) / (max - min);
         return Modify_Custom(roll, -1, affixStr);
     }
