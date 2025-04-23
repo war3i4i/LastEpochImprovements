@@ -77,13 +77,13 @@ public class kg_LastEpoch_Improvements : MelonMod
         if (item.isSet()) return Color.green; 
         if (item.isUniqueSetOrLegendary()) return Color.red;
         if (item.isExaltedItem()) return Color.magenta;
-        if (item.isRare()) return Color.yellow;
+        if (item.isRare()) return Color.yellow; 
         if (item.isMagicOrRare()) return Color.blue;
 
         return Color.white;
     } 
 
-    [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.AffixFormatter))]
+    [HarmonyPatch(typeof(TooltipItemManager), nameof(TooltipItemManager.AffixFormatter))] 
     private static class TooltipItemManager_AffixFormatter_Patch
     {
         private static ItemAffix TryGetMultiaffix(ItemDataUnpacked item, SP modProperty, AT tags)
