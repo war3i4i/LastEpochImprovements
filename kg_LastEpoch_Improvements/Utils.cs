@@ -96,13 +96,25 @@ public static class Utils
     {
         byte[] bytes = Convert.FromBase64String(base64);
         Texture2D texture = new Texture2D(1, 1);
-        texture.LoadImage(bytes);
+        texture.LoadImage(bytes); 
         texture.Apply();
         return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
     }
-    public static BazaarStallType? ToStall(this byte itemType)
+    private static BazaarStallType? IdolStall(ItemData item) => item.getAsUnpacked()?.classReq switch
     {
-        BazaarItemType type = (BazaarItemType)itemType;
+        ItemList.ClassRequirement.None => BazaarStallType.GENERIC_IDOL,
+        ItemList.ClassRequirement.Primalist => BazaarStallType.PRIMALIST_IDOL,
+        ItemList.ClassRequirement.Mage => BazaarStallType.MAGE_IDOL,
+        ItemList.ClassRequirement.Sentinel => BazaarStallType.SENTINEL_IDOL,
+        ItemList.ClassRequirement.Acolyte => BazaarStallType.ACOLYTE_IDOL,
+        ItemList.ClassRequirement.Rogue => BazaarStallType.ROGUE_IDOL,
+        ItemList.ClassRequirement.Any => BazaarStallType.GENERIC_IDOL,
+        _ => null
+    };
+    public static BazaarStallType? ToStall(this ItemData item)
+    {
+        BazaarItemType type = (BazaarItemType)item.itemType;
+        if (item.itemType.IsIdol()) return IdolStall(item);
         return type switch
         {
             BazaarItemType.Helmet => BazaarStallType.HELMET,
@@ -130,5 +142,12 @@ public static class Utils
             BazaarItemType.Bow => BazaarStallType.BOW,
             _ => null
         };
+    }
+    public static bool IsIdol(this byte itemType)
+    {
+        BazaarItemType type = (BazaarItemType)itemType;
+        return type is BazaarItemType.Idol1X2 or BazaarItemType.Idol1X3 or BazaarItemType.Idol1X4 
+            or BazaarItemType.Idol2X1 or BazaarItemType.Idol2X2 or BazaarItemType.Idol3X1 
+            or BazaarItemType.Idol4X1 or BazaarItemType.Idol1X1Eterra or BazaarItemType.Idol1X1Lagon;
     }
 }
