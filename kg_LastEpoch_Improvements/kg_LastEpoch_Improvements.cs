@@ -4,12 +4,12 @@ using Il2CppItemFiltering;
 using MelonLoader; 
 using Object = UnityEngine.Object;  
  
-[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.4.3", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.4.4", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
 
 namespace kg_LastEpoch_Improvements; 
   
 public class kg_LastEpoch_Improvements : MelonMod 
-{  
+{     
     private static MelonPreferences_Category ImprovementsModCategory; 
     private static MelonPreferences_Entry<bool> ShowAll;
     private static MelonPreferences_Entry<DisplayAffixType> AffixShowRoll; 
@@ -18,7 +18,8 @@ public class kg_LastEpoch_Improvements : MelonMod
     private static MelonPreferences_Entry<bool> FogOfWar;    
     private static MelonPreferences_Entry<bool> EnhancedCamera; 
     public static MelonPreferences_Entry<bool> ShowRaresOnMap;
-#endif
+    public static MelonPreferences_Entry<bool> ShowShrinesOnMap;
+#endif 
     public static GameObject CustomMapIcon;
 
     private enum DisplayAffixType { None, Old_Style, New_Style, Letter_Style };
@@ -53,7 +54,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         CustomMapIcon.AddComponent<CustomIconProcessor>();
     }
     public override void OnUpdate() => BazaarStuff.Update();
-    public override void OnInitializeMelon()
+    public override void OnInitializeMelon() 
     { 
         ImprovementsModCategory = MelonPreferences.CreateCategory("kg_Improvements");
         ShowAll = ImprovementsModCategory.CreateEntry("Show Override", false, "Show Override", "Show each filter rule on map");
@@ -63,6 +64,7 @@ public class kg_LastEpoch_Improvements : MelonMod
         FogOfWar = ImprovementsModCategory.CreateEntry("Fog of war", false, "Clear fog on map on start", "Clear fog of war when you 1th enter on map");
         EnhancedCamera = ImprovementsModCategory.CreateEntry("Enhanced Camera", false, "Enhanced camera", "Enhanced camera angles and zoom");
         ShowRaresOnMap = ImprovementsModCategory.CreateEntry("Show Rares On Map", false, "Show Rares On Map (some monsters might bug out and never spawn)", "Show rare items on map");
+        ShowShrinesOnMap = ImprovementsModCategory.CreateEntry("Show Shrines On Map", false, "Show Shrines On Map", "Show shrines on map");
 #endif
         ImprovementsModCategory.SetFilePath("UserData/kg_LastEpoch_Improvements.cfg", autoload: true);
         CreateCustomMapIcon();
@@ -243,6 +245,14 @@ public class kg_LastEpoch_Improvements : MelonMod
                 _text.color = new Color(1f, 0.05f, 0.77f);
             }
         }
+        
+        public void SetCustomText(string text, Color c, int size = 15)
+        {
+            if (_text == null) return;
+            _text.text = text;
+            _text.color = c;
+            _text.fontSize = size;
+        }
 
         private static CustomIconProcessor showingAffix;
  
@@ -311,6 +321,11 @@ public class kg_LastEpoch_Improvements : MelonMod
             __instance.CreateNewOption_Toggle(CategoryName, "<color=green>Show Rares On Map</color>", ShowRaresOnMap, (tf) =>
             {
                 ShowRaresOnMap.Value = tf;
+                ImprovementsModCategory.SaveToFile();
+            });
+            __instance.CreateNewOption_Toggle(CategoryName, "<color=green>Show Shrines On Map</color>", ShowShrinesOnMap, (tf) =>
+            {
+                ShowShrinesOnMap.Value = tf;
                 ImprovementsModCategory.SaveToFile();
             });
 #endif
