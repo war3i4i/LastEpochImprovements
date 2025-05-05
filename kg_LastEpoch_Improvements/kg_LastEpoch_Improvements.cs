@@ -4,9 +4,9 @@ using Il2CppItemFiltering;
 using MelonLoader; 
 using Object = UnityEngine.Object;  
  
-[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.4.4", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
+[assembly: MelonInfo(typeof(kg_LastEpoch_Improvements.kg_LastEpoch_Improvements), "kg.LastEpoch.Improvements", "1.4.5", "KG", "https://www.nexusmods.com/lastepoch/mods/8")]
 
-namespace kg_LastEpoch_Improvements; 
+namespace kg_LastEpoch_Improvements;  
   
 public class kg_LastEpoch_Improvements : MelonMod 
 {     
@@ -165,11 +165,11 @@ public class kg_LastEpoch_Improvements : MelonMod
     {
         rule = null;
         if (itemData == null) return false;
-        if (itemData.rarity == 9) return true;
+        if (itemData.rarity == 9) return true; 
         ItemFilter filter = ItemFilterManager.Instance.Filter;
         if (filter == null || filter.Match(itemData, out _, out _, out int matchingRuleNumber) == Rule.RuleOutcome.HIDE) return false;
         if (matchingRuleNumber <= 0) return false;
-        rule = filter.rules.get(matchingRuleNumber);
+        rule = filter.rules.get(matchingRuleNumber - 1);
         if (rule == null) return false;
         return bypass || rule.emphasized;
     } 
